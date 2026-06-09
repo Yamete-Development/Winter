@@ -5,7 +5,7 @@ import { hub } from "../../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import type { Route } from "./+types/index";
 import { useState, useEffect, forwardRef } from "react";
-import { Typography, Button, Card, Row, Col, List, Avatar, Tag, Space, Switch, Input, Select, Badge, Divider, Tabs, Dropdown, message } from "antd";
+import { Typography, Button, Card, Row, Col, List, Avatar, Tag, Space, Switch, Input, Select, Badge, Divider, Tabs, Dropdown, message, Modal, Steps } from "antd";
 import { BlockedWordsManager, type AntiSwearRule } from "../../components/BlockedWordsManager";
 import { 
   PlusOutlined, 
@@ -15,9 +15,11 @@ import {
   SafetyCertificateFilled, 
   CrownFilled,
   DragOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  CheckCircleOutlined,
+  SettingOutlined
 } from "@ant-design/icons";
-import type { LinksFunction } from "react-router";
+import  { type LinksFunction, useFetcher } from "react-router";
 import { Responsive, useContainerWidth } from "react-grid-layout";
 import gridStyles from "react-grid-layout/css/styles.css?url";
 import resizableStyles from "react-resizable/css/styles.css?url";
@@ -65,11 +67,47 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { userHubs };
 }
 
+
+export async function action({ request }: Route.ActionArgs) {
+  const user = await requireUser(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+  
+  if (intent === "create_hub") {
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const language = formData.get("language") as string;
+    const region = formData.get("region") as string;
+    
+    // Generate a simple ID
+    const id = "hub_" + Math.random().toString(36).substring(2, 11);
+    
+    try {
+      await db.insert(hub).values({
+        id,
+        name,
+        description,
+        language,
+        region,
+        ownerId: user.id,
+        iconUrl: "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=300&q=80",
+        shortDescription: description.substring(0, 50),
+        rules: [],
+      });
+      return { success: true };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  }
+  return { error: "Unknown intent" };
+}
+
 export default function DashboardIndex({ loaderData }: Route.ComponentProps) {
   const { userHubs } = loaderData;
 
   const [selectedHubId, setSelectedHubId] = useState(userHubs[0]?.id || "");
   const [chatInput, setChatInput] = useState("");
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [layouts, setLayouts] = useState<{ moderation: any, general: any }>(defaultLayouts);
 
   useEffect(() => {
@@ -268,7 +306,7 @@ export default function DashboardIndex({ loaderData }: Route.ComponentProps) {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>My Interchat Hubs</Text>
-                <Button type="primary" size="small" icon={<PlusOutlined />} style={{ background: "#9146ff", border: "none", borderRadius: 4, fontWeight: 600 }}>New</Button>
+                <Button type="primary" size="small" icon={<PlusOutlined />} style={{ background: "#9146ff", border: "none", borderRadius: 4, fontWeight: 600 }} onClick={() => setIsWizardOpen(true)}>New</Button>
               </div>
             }
             variant="borderless" 
@@ -656,7 +694,9 @@ export default function DashboardIndex({ loaderData }: Route.ComponentProps) {
                       fontWeight: 600,
                       borderRadius: 26,
                       boxShadow: '0 8px 16px rgba(145, 70, 255, 0.25)'
-                    }}>
+                    }}
+                    onClick={() => setIsWizardOpen(true)}
+                    >
                       Create Hub
                     </Button>
                 </div>
@@ -665,6 +705,170 @@ export default function DashboardIndex({ loaderData }: Route.ComponentProps) {
         </Col>
 
       </Row>
+      <HubWizard open={isWizardOpen} onCancel={() => setIsWizardOpen(false)} isFirstHub={hubs.length === 0} />
     </div>
+  );
+}
+
+
+function HubWizard({ open, onCancel, isFirstHub }: { open: boolean, onCancel: () => void, isFirstHub: boolean }) {
+  const fetcher = useFetcher<typeof action>();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState({ name: "", description: "", language: "English", region: "US East" });
+
+  const isSubmitting = fetcher.state === "submitting";
+
+  useEffect(() => {
+    if (open) {
+      setCurrentStep(0);
+      setFormData({ name: "", description: "", language: "English", region: "US East" });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data?.success) {
+      message.success("Hub created successfully!");
+      onCancel();
+    } else if (fetcher.state === "idle" && fetcher.data?.error) {
+      message.error(fetcher.data.error);
+    }
+  }, [fetcher.state, fetcher.data, onCancel]);
+
+  const handleNext = () => {
+    if (currentStep === 0 && (!formData.name || !formData.description)) {
+      message.error("Please fill out both name and description.");
+      return;
+    }
+    setCurrentStep(c => c + 1);
+  };
+
+  const handleSubmit = () => {
+    fetcher.submit(
+      { ...formData, intent: "create_hub" },
+      { method: "post" }
+    );
+  };
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      closable={!isSubmitting}
+      maskClosable={!isSubmitting}
+      width={600}
+      title={null}
+      styles={{ 
+        body: { background: 'rgba(25, 25, 30, 0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: 32, boxShadow: '0 24px 48px rgba(0,0,0,0.5)' },
+        mask: { background: 'rgba(0,0,0,0.8)' }
+      }}
+    >
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(145, 70, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(145, 70, 255, 0.3)' }}>
+              <GlobalOutlined style={{ fontSize: 24, color: '#b685ff' }} />
+            </div>
+            <Typography.Title level={3} style={{ margin: 0, color: 'white' }}>
+            {isFirstHub ? "Welcome to Interchat!" : "Create a New Hub"}
+            </Typography.Title>
+        </div>
+        
+        <Typography.Text type="secondary" style={{ display: 'block', paddingBottom: 24, paddingLeft: 64, borderBottom: '1px solid rgba(255,255,255,0.1)', fontSize: '1.05rem' }}>
+          {isFirstHub ? "Let's set up your very first hub to get started." : "Add another hub to manage a different set of communities."}
+        </Typography.Text>
+
+        <Steps 
+          current={currentStep} 
+          style={{ margin: '32px 0 40px' }}
+          items={[
+            { title: 'Basics', icon: <GlobalOutlined /> },
+            { title: 'Region', icon: <SettingOutlined /> },
+            { title: 'Ready', icon: <CheckCircleOutlined /> },
+          ]}
+        />
+
+        {currentStep === 0 && (
+          <div style={{ minHeight: 200, display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <Typography.Text strong style={{ display: 'block', marginBottom: 8, color: 'white', fontSize: '1.05rem' }}>Hub Name <span style={{color: '#ff4d4f'}}>*</span></Typography.Text>
+              <Input 
+                size="large" 
+                placeholder="e.g. Gaming Network" 
+                value={formData.name} 
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #2d2d34', color: 'white', height: 48, fontSize: '1.1rem' }}
+              />
+            </div>
+            <div>
+              <Typography.Text strong style={{ display: 'block', marginBottom: 8, color: 'white', fontSize: '1.05rem' }}>Description <span style={{color: '#ff4d4f'}}>*</span></Typography.Text>
+              <Input.TextArea 
+                size="large" 
+                rows={4}
+                placeholder="What is this hub about? (Used for global searches)" 
+                value={formData.description} 
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid #2d2d34', color: 'white', resize: 'none', fontSize: '1.1rem' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {currentStep === 1 && (
+          <div style={{ minHeight: 200, display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <div>
+              <Typography.Text strong style={{ display: 'block', marginBottom: 8, color: 'white', fontSize: '1.05rem' }}>Primary Language</Typography.Text>
+              <Select 
+                size="large" 
+                value={formData.language} 
+                onChange={v => setFormData({ ...formData, language: v })}
+                options={[{label: 'English', value: 'English'}, {label: 'Spanish', value: 'Spanish'}, {label: 'French', value: 'French'}]}
+                style={{ width: '100%', height: 48 }}
+                dropdownStyle={{ background: '#1c1c21' }}
+              />
+            </div>
+            <div>
+              <Typography.Text strong style={{ display: 'block', marginBottom: 8, color: 'white', fontSize: '1.05rem' }}>Server Region</Typography.Text>
+              <Select 
+                size="large" 
+                value={formData.region} 
+                onChange={v => setFormData({ ...formData, region: v })}
+                options={[{label: 'US East', value: 'US East'}, {label: 'US West', value: 'US West'}, {label: 'Europe', value: 'Europe'}, {label: 'Asia', value: 'Asia'}]}
+                style={{ width: '100%', height: 48 }}
+                dropdownStyle={{ background: '#1c1c21' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div style={{ minHeight: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(145, 70, 255, 0.1)', border: '1px solid rgba(145, 70, 255, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+              <CheckCircleOutlined style={{ fontSize: 40, color: '#b685ff' }} />
+            </div>
+            <Typography.Title level={3} style={{ color: 'white', margin: 0, marginBottom: 12 }}>You're all set!</Typography.Title>
+            <Typography.Text type="secondary" style={{ fontSize: '1.1rem' }}>
+              Click below to blast off "{formData.name || 'your new hub'}" and manage it immediately from your Interchat dashboard.
+            </Typography.Text>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 40, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {currentStep > 0 && (
+            <Button size="large" onClick={() => setCurrentStep(c => c - 1)} disabled={isSubmitting} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white', height: 48, padding: '0 24px' }}>
+              Back
+            </Button>
+          )}
+          {currentStep < 2 ? (
+            <Button size="large" type="primary" onClick={handleNext} style={{ background: '#9146ff', border: 'none', height: 48, padding: '0 32px' }}>
+              Next Step
+            </Button>
+          ) : (
+            <Button size="large" type="primary" onClick={handleSubmit} loading={isSubmitting} style={{ background: '#9146ff', border: 'none', height: 48, padding: '0 32px' }}>
+              Launch Hub
+            </Button>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
