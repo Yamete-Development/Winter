@@ -1,6 +1,8 @@
 import { Authenticator } from "remix-auth";
 import { sessionStorage } from "./session.server";
 import { DiscordStrategy } from "./discordStrategy.server";
+import { db } from "../db.server";
+import { user as userTable } from "../../drizzle/schema";
 
 export interface User {
   id: string;
@@ -27,11 +29,31 @@ authenticator.use(
       scope: ["identify", "guilds"],
     },
     async ({ profile }) => {
+      // Upsert the user in the DB so hub/channel foreign keys resolve
+      await db
+        .insert(userTable)
+        .values({
+          id: profile.id,
+          name: profile.global_name || profile.username,
+          image: profile.avatar
+            ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+            : "https://cdn.discordapp.com/embed/avatars/0.png",
+        })
+        .onConflictDoUpdate({
+          target: userTable.id,
+          set: {
+            name: profile.global_name || profile.username,
+            image: profile.avatar
+              ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+              : "https://cdn.discordapp.com/embed/avatars/0.png",
+          },
+        });
+
       return {
         id: profile.id,
         username: profile.global_name || profile.username,
-        avatarUrl: profile.avatar 
-          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png` 
+        avatarUrl: profile.avatar
+          ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
           : "https://cdn.discordapp.com/embed/avatars/0.png",
         isStaff: STAFF_IDS.includes(profile.id),
       };

@@ -35,7 +35,10 @@ export class DiscordStrategy<User> extends Strategy<User, { profile: any }> {
 
     // Phase 1: Redirect to Discord
     if (!code) {
-      const stateString = Math.random().toString(36).substring(2);
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const stateString = Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
       const scopes = this.options.scope?.join(" ") || "identify";
       
       const authUrl = new URL("https://discord.com/api/oauth2/authorize");

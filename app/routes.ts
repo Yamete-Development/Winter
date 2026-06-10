@@ -5,7 +5,8 @@ export default [
     index("routes/_marketing/index.tsx")
   ]),
   layout("routes/dashboard/layout.tsx", [
-    route("dashboard", "routes/dashboard/index.tsx")
+    route("dashboard", "routes/dashboard/index.tsx"),
+    route("dashboard/settings", "routes/dashboard/settings.tsx"),
   ]),
   layout("routes/staff/layout.tsx", [
     route("staff", "routes/staff/index.tsx"),
@@ -14,5 +15,7 @@ export default [
   ]),
   route("auth/discord", "routes/auth/discord.tsx"),
   route("auth/discord/callback", "routes/auth/callback.tsx"),
-  route("auth/logout", "routes/auth/logout.tsx")
+  route("auth/logout", "routes/auth/logout.tsx"),
+  route("api/v1/auth/sse", "routes/api/v1/auth.sse.tsx"),
+  route("api/v1/*", "routes/api/v1/$.tsx")
 ] satisfies RouteConfig;

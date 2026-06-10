@@ -27,13 +27,13 @@ export const connection = pgTable("Connection", {
 	id: text().primaryKey().notNull(),
 	channelId: text().notNull(),
 	invite: text(),
-	webhookUrl: text().notNull(),
+	webhookUrl: text("webhookURL").notNull(),
 	serverId: text().notNull(),
 	hubId: text().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	lastActive: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	parentId: text(),
-	webhookSecondaryUrl: text(),
+	webhookSecondaryUrl: text("webhookSecondaryURL"),
 	connected: boolean().default(true).notNull(),
 	pausedByBot: boolean().default(false).notNull(),
 }, (table) => [
@@ -402,6 +402,34 @@ export const appeal = pgTable("Appeal", {
 			foreignColumns: [infraction.id],
 			name: "Appeal_infractionId_fkey"
 		}).onDelete("cascade"),
+]);
+
+export const lobbyParticipant = pgTable("LobbyParticipant", {
+	id: varchar().primaryKey().notNull(),
+	lobbyId: text().notNull(),
+	userId: text().notNull(),
+	sourceConnectionId: text().notNull(),
+	displayName: text().notNull(),
+	firstSpokeAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("ix_LobbyParticipant_lobbyId").using("btree", table.lobbyId.asc().nullsLast().op("text_ops")),
+	index("ix_LobbyParticipant_userId").using("btree", table.userId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.lobbyId],
+			foreignColumns: [lobby.id],
+			name: "LobbyParticipant_lobbyId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.sourceConnectionId],
+			foreignColumns: [lobbyConnection.id],
+			name: "LobbyParticipant_sourceConnectionId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "LobbyParticipant_userId_fkey"
+		}).onDelete("cascade"),
+	unique("uq_lobby_participant").on(table.lobbyId, table.userId),
 ]);
 
 export const infraction = pgTable("Infraction", {
@@ -1177,6 +1205,75 @@ export const stripeSubscription = pgTable("StripeSubscription", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
+export const lobbyConnection = pgTable("LobbyConnection", {
+	id: varchar().primaryKey().notNull(),
+	lobbyId: text().notNull(),
+	webhookUrl: text("webhookURL").notNull(),
+	channelId: text().notNull(),
+	invokerUserId: text().notNull(),
+	invokerServerId: text().notNull(),
+	joinedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	leftAt: timestamp({ mode: 'string' }),
+	invokerServerName: text().default('Unknown Server').notNull(),
+}, (table) => [
+	index("ix_LobbyConnection_channelId").using("btree", table.channelId.asc().nullsLast().op("text_ops")),
+	index("ix_LobbyConnection_lobbyId").using("btree", table.lobbyId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.invokerServerId],
+			foreignColumns: [serverData.id],
+			name: "LobbyConnection_invokerServerId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.invokerUserId],
+			foreignColumns: [user.id],
+			name: "LobbyConnection_invokerUserId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.lobbyId],
+			foreignColumns: [lobby.id],
+			name: "LobbyConnection_lobbyId_fkey"
+		}).onDelete("cascade"),
+]);
+
+export const lobbyMessage = pgTable("LobbyMessage", {
+	id: varchar().primaryKey().notNull(),
+	content: text().notNull(),
+	lobbyId: text().notNull(),
+	sourceConnectionId: text(),
+	sourceChannelId: text(),
+	authorId: text().notNull(),
+	replyToId: text(),
+	original: boolean().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	attachmentUrls: text().array().notNull(),
+	authorDisplayName: text().default('Unknown User').notNull(),
+}, (table) => [
+	index("ix_LobbyMessage_authorId").using("btree", table.authorId.asc().nullsLast().op("text_ops")),
+	index("ix_LobbyMessage_createdAt").using("btree", table.createdAt.asc().nullsLast().op("timestamp_ops")),
+	index("ix_LobbyMessage_lobbyId").using("btree", table.lobbyId.asc().nullsLast().op("text_ops")),
+	index("ix_LobbyMessage_replyToId").using("btree", table.replyToId.asc().nullsLast().op("text_ops")),
+	foreignKey({
+			columns: [table.replyToId],
+			foreignColumns: [table.id],
+			name: "LobbyMessage_replyToId_fkey"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.authorId],
+			foreignColumns: [user.id],
+			name: "LobbyMessage_authorId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.lobbyId],
+			foreignColumns: [lobby.id],
+			name: "LobbyMessage_lobbyId_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.sourceConnectionId],
+			foreignColumns: [lobbyConnection.id],
+			name: "LobbyMessage_sourceConnectionId_fkey"
+		}),
+]);
+
 export const lobby = pgTable("Lobby", {
 	id: varchar().primaryKey().notNull(),
 	status: lobbyStatus().notNull(),
@@ -1186,43 +1283,8 @@ export const lobby = pgTable("Lobby", {
 	closedAt: timestamp({ mode: 'string' }),
 	callStartedAt: timestamp({ mode: 'string' }),
 	durationSeconds: integer(),
-});
-
-export const lobbyMessage = pgTable("LobbyMessage", {
-	id: varchar().primaryKey().notNull(),
-	content: text().notNull(),
-	lobbyId: text().notNull(),
-	sourceMemberId: text(),
-	sourceChannelId: text(),
-	authorId: text().notNull(),
-	replyToId: text(),
-	original: boolean().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	attachmentUrls: text().array().notNull(),
 }, (table) => [
-	index("ix_LobbyMessage_createdAt").using("btree", table.createdAt.asc().nullsLast().op("timestamp_ops")),
-	index("ix_LobbyMessage_lobbyId").using("btree", table.lobbyId.asc().nullsLast().op("text_ops")),
-	index("ix_LobbyMessage_replyToId").using("btree", table.replyToId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.authorId],
-			foreignColumns: [user.id],
-			name: "LobbyMessage_authorId_fkey"
-		}),
-	foreignKey({
-			columns: [table.lobbyId],
-			foreignColumns: [lobby.id],
-			name: "LobbyMessage_lobbyId_fkey"
-		}),
-	foreignKey({
-			columns: [table.sourceMemberId],
-			foreignColumns: [lobbyMember.id],
-			name: "LobbyMessage_sourceMemberId_fkey"
-		}),
-	foreignKey({
-			columns: [table.replyToId],
-			foreignColumns: [table.id],
-			name: "LobbyMessage_replyToId_fkey"
-		}).onDelete("set null"),
+	index("ix_lobby_status_open").using("btree", table.status.asc().nullsLast().op("enum_ops")).where(sql`(status = 'OPEN'::"LobbyStatus")`),
 ]);
 
 export const betaServer = pgTable("BetaServer", {
@@ -1245,54 +1307,25 @@ export const betaServer = pgTable("BetaServer", {
 		}),
 ]);
 
-export const lobbyMember = pgTable("LobbyMember", {
-	id: varchar().primaryKey().notNull(),
-	lobbyId: text().notNull(),
-	webhookUrl: text().notNull(),
-	channelId: text().notNull(),
-	invokerUserId: text().notNull(),
-	invokerServerId: text().notNull(),
-	joinedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	leftAt: timestamp({ mode: 'string' }),
-}, (table) => [
-	index("ix_LobbyMember_channelId").using("btree", table.channelId.asc().nullsLast().op("text_ops")),
-	index("ix_LobbyMember_lobbyId").using("btree", table.lobbyId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-			columns: [table.invokerServerId],
-			foreignColumns: [serverData.id],
-			name: "LobbyMember_invokerServerId_fkey"
-		}),
-	foreignKey({
-			columns: [table.invokerUserId],
-			foreignColumns: [user.id],
-			name: "LobbyMember_invokerUserId_fkey"
-		}),
-	foreignKey({
-			columns: [table.lobbyId],
-			foreignColumns: [lobby.id],
-			name: "LobbyMember_lobbyId_fkey"
-		}),
-]);
-
 export const lobbyMessageDelivery = pgTable("LobbyMessageDelivery", {
 	id: varchar().primaryKey().notNull(),
 	lobbyMessageId: text().notNull(),
-	targetMemberId: text().notNull(),
+	targetConnectionId: text().notNull(),
 	webhookMessageId: text().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("ix_LobbyMessageDelivery_lobbyMessageId").using("btree", table.lobbyMessageId.asc().nullsLast().op("text_ops")),
 	index("ix_LobbyMessageDelivery_webhookMessageId").using("btree", table.webhookMessageId.asc().nullsLast().op("text_ops")),
 	foreignKey({
-			columns: [table.targetMemberId],
-			foreignColumns: [lobbyMember.id],
-			name: "LobbyMessageDelivery_targetMemberId_fkey"
-		}),
-	foreignKey({
 			columns: [table.lobbyMessageId],
 			foreignColumns: [lobbyMessage.id],
 			name: "LobbyMessageDelivery_lobbyMessageId_fkey"
 		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.targetConnectionId],
+			foreignColumns: [lobbyConnection.id],
+			name: "LobbyMessageDelivery_targetConnectionId_fkey"
+		}),
 ]);
 
 export const lobbyReport = pgTable("LobbyReport", {
@@ -1317,11 +1350,6 @@ export const lobbyReport = pgTable("LobbyReport", {
 			name: "LobbyReport_handledBy_fkey"
 		}),
 	foreignKey({
-			columns: [table.lobbyId],
-			foreignColumns: [lobby.id],
-			name: "LobbyReport_lobbyId_fkey"
-		}),
-	foreignKey({
 			columns: [table.reporterId],
 			foreignColumns: [user.id],
 			name: "LobbyReport_reporterId_fkey"
@@ -1331,6 +1359,11 @@ export const lobbyReport = pgTable("LobbyReport", {
 			foreignColumns: [lobbyMessage.id],
 			name: "LobbyReport_reportedMessageId_fkey"
 		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.lobbyId],
+			foreignColumns: [lobby.id],
+			name: "LobbyReport_lobbyId_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const userStats = pgTable("UserStats", {

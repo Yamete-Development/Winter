@@ -7,8 +7,8 @@ const { Text } = Typography;
 export interface AntiSwearRule {
   id: string;
   pattern: string;
-  matchType: 'exact' | 'wildcard' | 'prefix' | 'suffix';
-  actions: ('BLOCK_MESSAGE' | 'WARN' | 'MUTE' | 'BAN' | 'SEND_ALERT')[];
+  matchType: string;
+  actions: string[];
 }
 
 interface BlockedWordsManagerProps {

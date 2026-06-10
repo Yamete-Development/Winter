@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { hub, connection, serverData, message, broadcast, user, blockWord, autoModEscalationRule, antiSwearRule, nsfwOverride, nsfwReviewQueue, antiSwearPattern, antiSwearWhitelist, appeal, infraction, blacklist, hubReport, lobbyReport, hubActivityMetrics, globalReport, hubInvite, hubAnnouncement, hubLogConfig, hubMessageReaction, hubModerator, hubReview, hubRulesAcceptance, hubUpvote, serverBlacklist, reputationLog, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyMessage, lobby, lobbyMember, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, userAchievementProgress } from "./schema";
+import { hub, connection, serverData, message, broadcast, user, blockWord, autoModEscalationRule, antiSwearRule, nsfwOverride, nsfwReviewQueue, antiSwearPattern, antiSwearWhitelist, appeal, infraction, lobby, lobbyParticipant, lobbyConnection, blacklist, hubReport, lobbyReport, hubActivityMetrics, globalReport, hubInvite, hubAnnouncement, hubLogConfig, hubMessageReaction, hubModerator, hubReview, hubRulesAcceptance, hubUpvote, serverBlacklist, reputationLog, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, userAchievementProgress } from "./schema";
 
 export const connectionRelations = relations(connection, ({one}) => ({
 	hub: one(hub, {
@@ -56,8 +56,8 @@ export const serverDataRelations = relations(serverData, ({many}) => ({
 	}),
 	hubServerStats: many(hubServerStats),
 	premiumKeys: many(premiumKey),
+	lobbyConnections: many(lobbyConnection),
 	betaServers: many(betaServer),
-	lobbyMembers: many(lobbyMember),
 }));
 
 export const broadcastRelations = relations(broadcast, ({one}) => ({
@@ -115,6 +115,7 @@ export const userRelations = relations(user, ({many}) => ({
 	hubs: many(hub),
 	antiSwearWhitelists: many(antiSwearWhitelist),
 	appeals: many(appeal),
+	lobbyParticipants: many(lobbyParticipant),
 	infractions_moderatorId: many(infraction, {
 		relationName: "infraction_moderatorId_user_id"
 	}),
@@ -168,9 +169,9 @@ export const userRelations = relations(user, ({many}) => ({
 	premiumKeys_purchasedBy: many(premiumKey, {
 		relationName: "premiumKey_purchasedBy_user_id"
 	}),
+	lobbyConnections: many(lobbyConnection),
 	lobbyMessages: many(lobbyMessage),
 	betaServers: many(betaServer),
-	lobbyMembers: many(lobbyMember),
 	lobbyReports_handledBy: many(lobbyReport, {
 		relationName: "lobbyReport_handledBy_user_id"
 	}),
@@ -304,6 +305,46 @@ export const infractionRelations = relations(infraction, ({one, many}) => ({
 	}),
 }));
 
+export const lobbyParticipantRelations = relations(lobbyParticipant, ({one}) => ({
+	lobby: one(lobby, {
+		fields: [lobbyParticipant.lobbyId],
+		references: [lobby.id]
+	}),
+	lobbyConnection: one(lobbyConnection, {
+		fields: [lobbyParticipant.sourceConnectionId],
+		references: [lobbyConnection.id]
+	}),
+	user: one(user, {
+		fields: [lobbyParticipant.userId],
+		references: [user.id]
+	}),
+}));
+
+export const lobbyRelations = relations(lobby, ({many}) => ({
+	lobbyParticipants: many(lobbyParticipant),
+	lobbyConnections: many(lobbyConnection),
+	lobbyMessages: many(lobbyMessage),
+	lobbyReports: many(lobbyReport),
+}));
+
+export const lobbyConnectionRelations = relations(lobbyConnection, ({one, many}) => ({
+	lobbyParticipants: many(lobbyParticipant),
+	serverDatum: one(serverData, {
+		fields: [lobbyConnection.invokerServerId],
+		references: [serverData.id]
+	}),
+	user: one(user, {
+		fields: [lobbyConnection.invokerUserId],
+		references: [user.id]
+	}),
+	lobby: one(lobby, {
+		fields: [lobbyConnection.lobbyId],
+		references: [lobby.id]
+	}),
+	lobbyMessages: many(lobbyMessage),
+	lobbyMessageDeliveries: many(lobbyMessageDelivery),
+}));
+
 export const blacklistRelations = relations(blacklist, ({one}) => ({
 	user_moderatorId: one(user, {
 		fields: [blacklist.moderatorId],
@@ -361,10 +402,6 @@ export const lobbyReportRelations = relations(lobbyReport, ({one, many}) => ({
 		references: [user.id],
 		relationName: "lobbyReport_handledBy_user_id"
 	}),
-	lobby: one(lobby, {
-		fields: [lobbyReport.lobbyId],
-		references: [lobby.id]
-	}),
 	user_reporterId: one(user, {
 		fields: [lobbyReport.reporterId],
 		references: [user.id],
@@ -373,6 +410,10 @@ export const lobbyReportRelations = relations(lobbyReport, ({one, many}) => ({
 	lobbyMessage: one(lobbyMessage, {
 		fields: [lobbyReport.reportedMessageId],
 		references: [lobbyMessage.id]
+	}),
+	lobby: one(lobby, {
+		fields: [lobbyReport.lobbyId],
+		references: [lobby.id]
 	}),
 	lobbyInfractions: many(lobbyInfraction),
 	lobbyReportActionLogs: many(lobbyReportActionLog),
@@ -663,18 +704,6 @@ export const stripeSubscriptionRelations = relations(stripeSubscription, ({many}
 }));
 
 export const lobbyMessageRelations = relations(lobbyMessage, ({one, many}) => ({
-	user: one(user, {
-		fields: [lobbyMessage.authorId],
-		references: [user.id]
-	}),
-	lobby: one(lobby, {
-		fields: [lobbyMessage.lobbyId],
-		references: [lobby.id]
-	}),
-	lobbyMember: one(lobbyMember, {
-		fields: [lobbyMessage.sourceMemberId],
-		references: [lobbyMember.id]
-	}),
 	lobbyMessage: one(lobbyMessage, {
 		fields: [lobbyMessage.replyToId],
 		references: [lobbyMessage.id],
@@ -683,31 +712,20 @@ export const lobbyMessageRelations = relations(lobbyMessage, ({one, many}) => ({
 	lobbyMessages: many(lobbyMessage, {
 		relationName: "lobbyMessage_replyToId_lobbyMessage_id"
 	}),
-	lobbyMessageDeliveries: many(lobbyMessageDelivery),
-	lobbyReports: many(lobbyReport),
-}));
-
-export const lobbyRelations = relations(lobby, ({many}) => ({
-	lobbyMessages: many(lobbyMessage),
-	lobbyMembers: many(lobbyMember),
-	lobbyReports: many(lobbyReport),
-}));
-
-export const lobbyMemberRelations = relations(lobbyMember, ({one, many}) => ({
-	lobbyMessages: many(lobbyMessage),
-	serverDatum: one(serverData, {
-		fields: [lobbyMember.invokerServerId],
-		references: [serverData.id]
-	}),
 	user: one(user, {
-		fields: [lobbyMember.invokerUserId],
+		fields: [lobbyMessage.authorId],
 		references: [user.id]
 	}),
 	lobby: one(lobby, {
-		fields: [lobbyMember.lobbyId],
+		fields: [lobbyMessage.lobbyId],
 		references: [lobby.id]
 	}),
+	lobbyConnection: one(lobbyConnection, {
+		fields: [lobbyMessage.sourceConnectionId],
+		references: [lobbyConnection.id]
+	}),
 	lobbyMessageDeliveries: many(lobbyMessageDelivery),
+	lobbyReports: many(lobbyReport),
 }));
 
 export const betaServerRelations = relations(betaServer, ({one}) => ({
@@ -722,13 +740,13 @@ export const betaServerRelations = relations(betaServer, ({one}) => ({
 }));
 
 export const lobbyMessageDeliveryRelations = relations(lobbyMessageDelivery, ({one}) => ({
-	lobbyMember: one(lobbyMember, {
-		fields: [lobbyMessageDelivery.targetMemberId],
-		references: [lobbyMember.id]
-	}),
 	lobbyMessage: one(lobbyMessage, {
 		fields: [lobbyMessageDelivery.lobbyMessageId],
 		references: [lobbyMessage.id]
+	}),
+	lobbyConnection: one(lobbyConnection, {
+		fields: [lobbyMessageDelivery.targetConnectionId],
+		references: [lobbyConnection.id]
 	}),
 }));
 
