@@ -9,7 +9,7 @@ The project is structured around a **Resource-Oriented Architecture** for maximu
 * **Frontend:** React 19, React Router v7, Ant Design, Tailwind CSS
 * **Backend:** oRPC, Drizzle ORM (PostgreSQL), Bun
 * **State Management:** React Query, React Virtuoso (for massive virtualized logs)
-* **Real-time Engine:** Beacon (Elixir SSE Server)
+* **Real-time Engine:** Prism (Elixir SSE Server)
 
 ### Key Directories
 - `app/components/`: Modular React UI components (Dashboard tabs, Modals, Wizards).
@@ -25,7 +25,7 @@ The project is structured around a **Resource-Oriented Architecture** for maximu
 - [Bun](https://bun.sh/) (v1.x)
 - PostgreSQL (v15+)
 - Redis (For active session state/caching)
-- **Beacon** (Our Elixir-based Server-Sent Events fanout server)
+- **Prism** (Our Elixir-based Server-Sent Events fanout server)
 
 ## Environment Variables
 
@@ -77,8 +77,8 @@ To fully develop and test the live dashboard, you need to run both the Web Serve
    ```
    The site will be running at `http://localhost:5173`.
 
-2. **Start Beacon (SSE Server):**
-   Beacon is the Elixir Broadway/Prism worker responsible for piping live Discord messages into the web UI. In a separate terminal, navigate to the `interchat-broadcast-worker` directory and start it:
+2. **Start Prism (SSE Server):**
+   Prism is the Elixir Broadway/Prism worker responsible for piping live Discord messages into the web UI. In a separate terminal, navigate to the `interchat-broadcast-worker` directory and start it:
    ```bash
    cd ../interchat-broadcast-worker
    mix deps.get
