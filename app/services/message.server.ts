@@ -14,6 +14,7 @@ export const messageService = {
       .select({
         message,
         authorName: user.name,
+        authorAvatarUrl: user.image,
         authorBadges: user.badges,
         serverName: serverData.name,
       })
@@ -45,6 +46,7 @@ export const messageService = {
       },
       status: {
         authorName: result.authorName || "Unknown User",
+        authorAvatarUrl: result.authorAvatarUrl || null,
         guildName: result.serverName || "Unknown Server",
         badges: (result.authorBadges as string[]) || [],
       }

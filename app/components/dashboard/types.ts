@@ -34,6 +34,7 @@ export type DashboardChatLog = {
   origin: string;
   text: string;
   badge: string;
+  avatarUrl?: string | null;
   createdAt?: Date | string;
 };
 

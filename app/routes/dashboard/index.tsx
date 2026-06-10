@@ -100,6 +100,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
                 },
                 status: {
                   authorName: payload.authorName,
+                  authorAvatarUrl: payload.authorAvatarUrl ? payload.authorAvatarUrl.replace(/\.(png|jpg|jpeg|gif)/i, '.webp') : (payload.authorAvatarHash ? `https://cdn.discordapp.com/avatars/${payload.authorId}/${payload.authorAvatarHash}.webp` : null),
                   guildName: payload.guildName,
                   badges: payload.badges || [],
                 }
@@ -203,6 +204,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
         origin: m.status.guildName || "Unknown",
         text: m.spec.content,
         badge: m.status.badges[0] || "",
+        avatarUrl: m.status.authorAvatarUrl ? m.status.authorAvatarUrl.replace(/\.(png|jpg|jpeg|gif)/i, '.webp') : null,
         createdAt: m.metadata.createdAt
       })) || [],
       permissions: activeHubFull?.metadata.permissions || {

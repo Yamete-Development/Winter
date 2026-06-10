@@ -154,7 +154,7 @@ export function ModerationTab({
                           trigger={["click"]}
                           placement="bottomLeft"
                         >
-                          <Avatar style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", flexShrink: 0, cursor: "pointer", transition: "all 0.2s" }} className="hover:scale-105">
+                          <Avatar src={messageItem.avatarUrl} style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", flexShrink: 0, cursor: "pointer", transition: "all 0.2s" }} className="hover:scale-105">
                             {messageItem.sender.substring(0, 2).toUpperCase()}
                           </Avatar>
                         </Dropdown>

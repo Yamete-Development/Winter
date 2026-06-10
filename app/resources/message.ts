@@ -13,6 +13,7 @@ export type MessageSpec = {
 
 export type MessageStatus = {
   authorName: string | null;
+  authorAvatarUrl: string | null;
   guildName: string | null;
   badges: string[];
 };
