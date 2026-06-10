@@ -246,9 +246,8 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <Row gutter={[24, 24]} style={{ height: '100%' }}>
-        <HubSelector hubs={hubs} configs={dummyConfigs as any} selectedHubId={selectedHubId} onSelectHub={setSelectedHubId} onCreateHub={() => setShowOnboarding(true)} />
-        <Col xs={24} lg={18} style={{ paddingTop: 24, height: '100%', overflowY: 'auto', paddingRight: 12, position: 'relative' }} className="dark-scrollbar">
+      <Row style={{ height: '100%', position: 'relative' }}>
+        <Col xs={24} lg={24} style={{ paddingTop: 24, height: '100%', overflowY: 'auto', paddingRight: 64, position: 'relative' }} className="dark-scrollbar">
           <div style={hubs.length === 0 ? { filter: 'blur(5px)', pointerEvents: 'none', userSelect: 'none', opacity: 0.3, transition: 'all 0.3s ease' } : { transition: 'all 0.3s ease' }}>
             <DashboardPageHeader activeHub={activeHub} />
           <Tabs 
@@ -305,6 +304,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
           )}
         </Col>
 
+        <HubSelector hubs={hubs} configs={dummyConfigs as any} selectedHubId={selectedHubId} onSelectHub={setSelectedHubId} onCreateHub={() => setShowOnboarding(true)} />
       </Row>
 
       <CreateHubWizard
