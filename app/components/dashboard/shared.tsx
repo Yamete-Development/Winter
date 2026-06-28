@@ -4,7 +4,7 @@ import type { CardProps } from "antd";
 
 const { Text } = Typography;
 
-const dashboardGlassCardStyle: CSSProperties = {
+export const dashboardGlassCardStyle: CSSProperties = {
   width: "100%",
   height: "100%",
   display: "flex",
@@ -16,7 +16,7 @@ const dashboardGlassCardStyle: CSSProperties = {
 };
 
 const dashboardGlassCardStyles: NonNullable<CardProps["styles"]> = {
-  header: { borderBottom: "1px solid rgba(255,255,255,0.05)" },
+  header: { borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "grab" },
   body: { flex: 1, overflowY: "auto" },
 };
 
@@ -51,7 +51,7 @@ export function DashboardDangerCard({ style, styles, ...props }: CardProps) {
       }}
       styles={{
         ...dashboardGlassCardStyles,
-        header: { borderBottom: "1px solid rgba(245, 34, 45, 0.2)" },
+        header: { borderBottom: "1px solid rgba(245, 34, 45, 0.2)", cursor: "grab" },
         ...styles,
       }}
       {...props}

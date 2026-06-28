@@ -1,4 +1,4 @@
-import type { AntiSwearRule } from "../BlockedWordsManager";
+import type { AutomodRule } from "../BlockedWordsManager";
 import type { PermissionAction } from "../../permissions/config";
 
 export type DashboardBackgroundSearchResult = {
@@ -23,6 +23,7 @@ export type DashboardHub = {
 };
 
 export type DashboardConnection = {
+  id: string;
   name: string;
   channel: string;
   connected: boolean;
@@ -43,12 +44,13 @@ export type DashboardHubConfig = {
   locked: boolean;
   profanityFilter: boolean;
   appealCooldown: number;
-  antiSwearRules: AntiSwearRule[];
+  automodRules: AutomodRule[];
   welcomeMessage: string;
   connections: DashboardConnection[];
   chatLogs: DashboardChatLog[];
   permissions: Record<PermissionAction, boolean>;
   effectiveRole: string;
+  settings: number;
 };
 
 export type DashboardConfigs = Record<string, DashboardHubConfig>;

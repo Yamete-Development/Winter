@@ -5,7 +5,7 @@ export const appealStatus = pgEnum("AppealStatus", ['PENDING', 'ACCEPTED', 'REJE
 export const approvalStatus = pgEnum("ApprovalStatus", ['PENDING', 'APPROVED', 'REJECTED'])
 export const badges = pgEnum("Badges", ['VOTER', 'SUPPORTER', 'TRANSLATOR', 'DEVELOPER', 'STAFF', 'BETA_TESTER', 'HUB_OWNER', 'HUB_MANAGER', 'HUB_MODERATOR', 'TOP_CHATTER'])
 export const blacklistType = pgEnum("BlacklistType", ['PERMANENT', 'TEMPORARY'])
-export const blockWordAction = pgEnum("BlockWordAction", ['BLOCK_MESSAGE', 'CENSOR_MESSAGE', 'SEND_ALERT', 'WARN', 'MUTE', 'BAN', 'BLACKLIST'])
+export const blockWordAction = pgEnum("BlockWordAction", ['BLOCK_MESSAGE', 'CENSOR_WORD', 'SEND_ALERT', 'WARN', 'MUTE', 'BAN', 'BLACKLIST'])
 export const giftType = pgEnum("GiftType", ['FREE', 'DISCOUNT'])
 export const hubActivityLevel = pgEnum("HubActivityLevel", ['LOW', 'MEDIUM', 'HIGH'])
 export const hubVisibility = pgEnum("HubVisibility", ['PUBLIC', 'PRIVATE', 'UNLISTED'])
@@ -198,17 +198,17 @@ export const user = pgTable("User", {
 	showNsfwHubs: boolean().default(false).notNull(),
 	locale: text(),
 	lastVoted: timestamp({ mode: 'string' }),
-	// TODO: failed to parse database type 'Badges"[]'
 	badges: text("badges").array().default([""]).notNull(),
 	voteRemindersEnabled: boolean().default(true).notNull(),
 	lastVoteReminderSent: timestamp({ mode: 'string' }),
 	customerId: text(),
+	dashboardPreference: jsonb(),
 }, (table) => [
 	index("User_email_idx").using("btree", table.email.asc().nullsLast().op("text_ops")),
 	index("User_lastVoted_idx").using("btree", table.lastVoted.asc().nullsLast().op("timestamp_ops")),
 ]);
 
-export const antiSwearRule = pgTable("AntiSwearRule", {
+export const automodRule = pgTable("AutomodRule", {
 	id: text().primaryKey().notNull(),
 	hubId: text(),
 	name: text().notNull(),
@@ -224,17 +224,17 @@ export const antiSwearRule = pgTable("AntiSwearRule", {
 	foreignKey({
 			columns: [table.createdBy],
 			foreignColumns: [user.id],
-			name: "AntiSwearRule_createdBy_fkey"
+			name: "AutomodRule_createdBy_fkey"
 		}),
 	foreignKey({
 			columns: [table.hubId],
 			foreignColumns: [hub.id],
-			name: "AntiSwearRule_hubId_fkey"
+			name: "AutomodRule_hubId_fkey"
 		}).onDelete("cascade"),
 	foreignKey({
 			columns: [table.serverId],
 			foreignColumns: [serverData.id],
-			name: "AntiSwearRule_serverId_fkey"
+			name: "AutomodRule_serverId_fkey"
 		}).onDelete("cascade"),
 	unique("uq_antiswearrule_hub_name").on(table.hubId, table.name),
 	unique("uq_antiswearrule_server_name").on(table.name, table.serverId),
@@ -298,17 +298,17 @@ export const nsfwReviewQueue = pgTable("NsfwReviewQueue", {
 		}).onDelete("cascade"),
 ]);
 
-export const antiSwearPattern = pgTable("AntiSwearPattern", {
+export const automodPattern = pgTable("AutomodPattern", {
 	id: text().primaryKey().notNull(),
 	ruleId: text().notNull(),
 	pattern: text().notNull(),
 	matchType: patternMatchType().default('EXACT').notNull(),
 }, (table) => [
-	index("AntiSwearPattern_ruleId_idx").using("btree", table.ruleId.asc().nullsLast().op("text_ops")),
+	index("AutomodPattern_ruleId_idx").using("btree", table.ruleId.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.ruleId],
-			foreignColumns: [antiSwearRule.id],
-			name: "AntiSwearPattern_ruleId_fkey"
+			foreignColumns: [automodRule.id],
+			name: "AutomodPattern_ruleId_fkey"
 		}).onDelete("cascade"),
 ]);
 
@@ -359,7 +359,7 @@ export const hub = pgTable("Hub", {
 	unique("Hub_name_key").on(table.name),
 ]);
 
-export const antiSwearWhitelist = pgTable("AntiSwearWhitelist", {
+export const automodWhitelist = pgTable("AutomodWhitelist", {
 	id: text().primaryKey().notNull(),
 	ruleId: text().notNull(),
 	word: text().notNull(),
@@ -370,14 +370,14 @@ export const antiSwearWhitelist = pgTable("AntiSwearWhitelist", {
 	foreignKey({
 			columns: [table.createdBy],
 			foreignColumns: [user.id],
-			name: "AntiSwearWhitelist_createdBy_fkey"
+			name: "AutomodWhitelist_createdBy_fkey"
 		}),
 	foreignKey({
 			columns: [table.ruleId],
-			foreignColumns: [antiSwearRule.id],
-			name: "AntiSwearWhitelist_ruleId_fkey"
+			foreignColumns: [automodRule.id],
+			name: "AutomodWhitelist_ruleId_fkey"
 		}).onDelete("cascade"),
-	unique("AntiSwearWhitelist_ruleId_word_key").on(table.ruleId, table.word),
+	unique("AutomodWhitelist_ruleId_word_key").on(table.ruleId, table.word),
 ]);
 
 export const appeal = pgTable("Appeal", {

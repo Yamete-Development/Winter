@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { GridItemWrapper, GridTabContent } from "./GridTabContent";
 import { DashboardDangerCard, DashboardSectionCard, DashboardSectionTitle } from "./shared";
+import { HubSettingsPanel } from "./HubSettingsPanel";
 import type { DashboardHubConfig, DashboardTabKey } from "./types";
 
 const { Text } = Typography;
@@ -14,10 +15,15 @@ type GeneralTabProps = {
   layout: any;
   onLayoutChange: (layout: any, allLayouts: any) => void;
   activeConfig: DashboardHubConfig;
+  activeHubId: string;
   onAddConnection: () => void;
-  onToggleConnection: (guildName: string) => void;
-  onDisconnectConnection: (guildName: string) => void;
+  onToggleConnection: (connectionId: string) => void;
+  onDisconnectConnection: (connectionId: string) => void;
+  onDeleteHub: () => void;
+  onTransferOwnership: () => void;
+  onNukeMessages: () => void;
   onWelcomeMessageChange: (value: string) => void;
+  onSettingsFlagChange: (flag: string, enabled: boolean) => void;
 };
 
 export function GeneralTab({
@@ -26,10 +32,15 @@ export function GeneralTab({
   layout,
   onLayoutChange,
   activeConfig,
+  activeHubId,
   onAddConnection,
   onToggleConnection,
   onDisconnectConnection,
+  onDeleteHub,
+  onTransferOwnership,
+  onNukeMessages,
   onWelcomeMessageChange,
+  onSettingsFlagChange,
 }: GeneralTabProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   
@@ -85,10 +96,10 @@ export function GeneralTab({
                           </Text>
                         </div>
                         <Space size={8} style={{ flexShrink: 0 }}>
-                          <Button size="small" style={{ background: "transparent", borderColor: "rgba(255,255,255,0.1)" }} icon={connection.connected ? <PauseOutlined /> : <CaretRightOutlined />} onClick={() => onToggleConnection(connection.name)} disabled={!activeConfig.permissions.MANAGE_CONNECTIONS}>
+                          <Button size="small" style={{ background: "transparent", borderColor: "rgba(255,255,255,0.1)" }} icon={connection.connected ? <PauseOutlined /> : <CaretRightOutlined />} onClick={() => onToggleConnection(connection.id)} disabled={!activeConfig.permissions.MANAGE_CONNECTIONS}>
                             {connection.connected ? "Pause" : "Resume"}
                           </Button>
-                          <Button danger size="small" type="text" style={{ background: "rgba(245, 34, 45, 0.1)" }} icon={<DisconnectOutlined />} onClick={() => onDisconnectConnection(connection.name)} disabled={!activeConfig.permissions.MANAGE_CONNECTIONS}>
+                          <Button danger size="small" type="text" style={{ background: "rgba(245, 34, 45, 0.1)" }} icon={<DisconnectOutlined />} onClick={() => onDisconnectConnection(connection.id)} disabled={!activeConfig.permissions.MANAGE_CONNECTIONS}>
                             Disconnect
                           </Button>
                         </Space>
@@ -128,8 +139,29 @@ export function GeneralTab({
           </DashboardSectionCard>
         </GridItemWrapper>
 
+        <GridItemWrapper key="hubSettings">
+          <HubSettingsPanel
+            activeConfig={activeConfig}
+            onToggleFlag={onSettingsFlagChange}
+          />
+        </GridItemWrapper>
+
         <GridItemWrapper key="dangerZone">
           <DashboardDangerCard title={<Text style={{ color: "#ff4d4f", fontSize: "0.75rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>Danger Zone</Text>}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid rgba(245, 34, 45, 0.1)" }}>
+              <div>
+                <Text strong style={{ color: "white", display: "block" }}>
+                  Nuke All Messages
+                </Text>
+                <Text type="secondary" style={{ fontSize: "0.75rem" }}>
+                  Permanently delete all messages in this hub.
+                </Text>
+              </div>
+              <Button danger onClick={onNukeMessages} disabled={!activeConfig.permissions.LOCKDOWN_HUB}>
+                Nuke Messages
+              </Button>
+            </div>
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid rgba(245, 34, 45, 0.1)" }}>
               <div>
                 <Text strong style={{ color: "white", display: "block" }}>
@@ -139,7 +171,7 @@ export function GeneralTab({
                   Transfer this hub to another server.
                 </Text>
               </div>
-              <Button danger ghost disabled={activeConfig.effectiveRole !== "OWNER"}>
+              <Button danger ghost onClick={onTransferOwnership} disabled={activeConfig.effectiveRole !== "OWNER"}>
                 Transfer
               </Button>
             </div>
@@ -153,7 +185,7 @@ export function GeneralTab({
                   Permanently destroy this hub.
                 </Text>
               </div>
-              <Button danger type="primary" style={{ background: activeConfig.effectiveRole === "OWNER" ? "#f5222d" : undefined, borderColor: activeConfig.effectiveRole === "OWNER" ? "#f5222d" : undefined }} disabled={activeConfig.effectiveRole !== "OWNER"}>
+              <Button danger type="primary" onClick={onDeleteHub} style={{ background: activeConfig.effectiveRole === "OWNER" ? "#f5222d" : undefined, borderColor: activeConfig.effectiveRole === "OWNER" ? "#f5222d" : undefined }} disabled={activeConfig.effectiveRole !== "OWNER"}>
                 Delete Hub
               </Button>
             </div>

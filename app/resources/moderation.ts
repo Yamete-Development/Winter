@@ -4,23 +4,23 @@ export type BaseResourceMetadata = {
   createdAt: string;
   updatedAt: string | null;
 };
-export type AntiSwearPattern = {
+export type AutomodPattern = {
   id: string;
   pattern: string;
   matchType: "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD";
 };
 
-export type AntiSwearRuleSpec = {
+export type AutomodRuleSpec = {
   name: string;
   enabled: boolean;
   muteDurationMinutes: number | null;
   actions: string[]; // E.g., 'BLOCK_MESSAGE', 'WARN', etc.
-  patterns: AntiSwearPattern[];
+  patterns: AutomodPattern[];
 };
 
-export type AntiSwearRuleResource = {
+export type AutomodRuleResource = {
   metadata: BaseResourceMetadata;
-  spec: AntiSwearRuleSpec;
+  spec: AutomodRuleSpec;
 };
 
 export type InfractionSpec = {

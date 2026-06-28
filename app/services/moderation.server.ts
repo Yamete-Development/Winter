@@ -1,17 +1,17 @@
 import { db } from "../db.server";
-import { antiSwearRule, antiSwearPattern, infraction, user } from "../../drizzle/schema";
+import { automodRule, automodPattern, infraction, user } from "../../drizzle/schema";
 import { eq, inArray, desc } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import type { AntiSwearRuleResource, InfractionResource } from "../resources/moderation";
+import type { AutomodRuleResource, InfractionResource } from "../resources/moderation";
 
 export const moderationService = {
-  async getAntiSwearRules(hubId: string): Promise<AntiSwearRuleResource[]> {
-    const rules = await db.select().from(antiSwearRule).where(eq(antiSwearRule.hubId, hubId));
+  async getAutomodRules(hubId: string): Promise<AutomodRuleResource[]> {
+    const rules = await db.select().from(automodRule).where(eq(automodRule.hubId, hubId));
     
     const ruleIds = rules.map(r => r.id);
     
     const patterns = ruleIds.length > 0 
-      ? await db.select().from(antiSwearPattern).where(inArray(antiSwearPattern.ruleId, ruleIds))
+      ? await db.select().from(automodPattern).where(inArray(automodPattern.ruleId, ruleIds))
       : [];
 
     return rules.map(rule => ({
@@ -85,5 +85,71 @@ export const moderationService = {
         }
       };
     });
+  },
+
+  async batchUpdateAutomodRules(hubId: string, rules: { id?: string, pattern: string, matchType: string, actions: string[] }[], createdBy: string) {
+    const ruleIdsToKeep = new Set<string>();
+
+    for (const rule of rules) {
+      const ruleId = rule.id && rule.id.length > 5 ? rule.id : crypto.randomUUID();
+      ruleIdsToKeep.add(ruleId);
+
+      await db
+        .insert(automodRule)
+        .values({
+          id: ruleId,
+          hubId,
+          name: rule.pattern,
+          createdBy,
+          enabled: true,
+          muteDurationMinutes: 60,
+          actions: rule.actions,
+        })
+        .onConflictDoUpdate({
+          target: [automodRule.hubId, automodRule.name],
+          set: {
+            enabled: true,
+            actions: rule.actions,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+    }
+
+    const allRuleIds = Array.from(ruleIdsToKeep);
+    const existingPatterns = allRuleIds.length > 0
+      ? await db.select().from(automodPattern).where(inArray(automodPattern.ruleId, allRuleIds))
+      : [];
+
+    for (const rule of rules) {
+      const ruleId = rule.id && rule.id.length > 5 ? rule.id : crypto.randomUUID();
+      const existing = existingPatterns.filter(p => p.ruleId === ruleId);
+
+      if (existing.length > 0) {
+        await db
+          .update(automodPattern)
+          .set({
+            pattern: rule.pattern,
+            matchType: rule.matchType.toUpperCase() as "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD",
+          })
+          .where(eq(automodPattern.ruleId, ruleId));
+      } else {
+        await db.insert(automodPattern).values({
+          id: crypto.randomUUID(),
+          ruleId,
+          pattern: rule.pattern,
+          matchType: rule.matchType.toUpperCase() as "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD",
+        });
+      }
+    }
+
+    const existingRules = await db.select({ id: automodRule.id }).from(automodRule).where(eq(automodRule.hubId, hubId));
+    const rulesToDelete = existingRules.filter(r => !ruleIdsToKeep.has(r.id)).map(r => r.id);
+
+    if (rulesToDelete.length > 0) {
+      await db.delete(automodPattern).where(inArray(automodPattern.ruleId, rulesToDelete));
+      await db.delete(automodRule).where(inArray(automodRule.id, rulesToDelete));
+    }
+
+    return true;
   }
 };

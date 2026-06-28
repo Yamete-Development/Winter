@@ -3,6 +3,7 @@ import { sessionStorage } from "./session.server";
 import { DiscordStrategy } from "./discordStrategy.server";
 import { db } from "../db.server";
 import { user as userTable } from "../../drizzle/schema";
+import { permissionService } from "./permission.server";
 
 export interface User {
   id: string;
@@ -12,9 +13,6 @@ export interface User {
 }
 
 export const authenticator = new Authenticator<User>();
-
-// Hardcoded staff IDs from the bot or team
-const STAFF_IDS = ["123456789012345678"]; // Add real IDs later
 
 if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET || !process.env.DISCORD_CALLBACK_URL) {
   console.warn("Discord OAuth credentials are not fully set in .env. Login will fail unless mocked.");
@@ -29,7 +27,6 @@ authenticator.use(
       scope: ["identify", "guilds"],
     },
     async ({ profile }) => {
-      // Upsert the user in the DB so hub/channel foreign keys resolve
       await db
         .insert(userTable)
         .values({
@@ -49,13 +46,15 @@ authenticator.use(
           },
         });
 
+      const isStaff = await permissionService.checkIsStaff(profile.id).catch(() => false);
+
       return {
         id: profile.id,
         username: profile.global_name || profile.username,
         avatarUrl: profile.avatar
           ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
           : "https://cdn.discordapp.com/embed/avatars/0.png",
-        isStaff: STAFF_IDS.includes(profile.id),
+        isStaff,
       };
     }
   )

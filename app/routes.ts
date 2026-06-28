@@ -17,5 +17,6 @@ export default [
   route("auth/discord/callback", "routes/auth/callback.tsx"),
   route("auth/logout", "routes/auth/logout.tsx"),
   route("api/v1/auth/sse", "routes/api/v1/auth.sse.tsx"),
+  route("api/beacon/token", "routes/api/beacon/token.tsx"),
   route("api/v1/*", "routes/api/v1/$.tsx")
 ] satisfies RouteConfig;

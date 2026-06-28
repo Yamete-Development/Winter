@@ -33,6 +33,7 @@ export function GridTabContent({ layout, onLayoutChange, children }: GridTabCont
           rowHeight={30}
           containerPadding={[0, 8]}
           onLayoutChange={onLayoutChange}
+          dragConfig={{ handle: ".ant-card-head, .hub-banner-drag" }}
         >
           {children}
         </Responsive>

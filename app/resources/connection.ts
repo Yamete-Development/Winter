@@ -8,6 +8,7 @@ export type HubConnectionSpec = {
   channelId: string;
   serverId: string;
   connected: boolean;
+  pausedByBot: boolean;
 };
 
 export type HubConnectionStatus = {

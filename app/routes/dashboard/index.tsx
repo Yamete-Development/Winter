@@ -1,10 +1,12 @@
 import type { Route } from "./+types/index";
 import { useEffect, useState, useMemo } from "react";
-import { Col, Row, Tabs, Spin } from "antd";
+import { Col, Row, Tabs, Spin, Modal, message, Input } from "antd";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { orpc } from "../../lib/orpc";
-import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import type { AntiSwearRule } from "../../components/BlockedWordsManager";
+import { getDefaultPermissions } from "../../permissions/config";
+import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { HubSettingsFlags } from "../../schemas/hub";
+import type { AutomodRule } from "../../components/BlockedWordsManager";
 import { CreateHubWizard } from "../../components/CreateHubWizard";
 import { EmptyDashboardState } from "../../components/dashboard/EmptyDashboardState";
 import { GeneralTab } from "../../components/dashboard/GeneralTab";
@@ -12,8 +14,9 @@ import { HubSelector } from "../../components/dashboard/HubSelector";
 import { defaultDashboardLayouts, mockFallbackHub } from "../../components/dashboard/mockData";
 import { ModerationTab } from "../../components/dashboard/ModerationTab";
 import { DashboardPageHeader } from "../../components/dashboard/PageHeader";
+import { UnsavedChangesBanner } from "../../components/dashboard/UnsavedChangesBanner";
 import type { DashboardLayouts, DashboardHub, DashboardHubConfig } from "../../components/dashboard/types";
-import { type LinksFunction, useRevalidator } from "react-router";
+import { type LinksFunction, useRevalidator, useBlocker, useNavigate } from "react-router";
 import gridStyles from "react-grid-layout/css/styles.css?url";
 import resizableStyles from "react-resizable/css/styles.css?url";
 
@@ -36,6 +39,16 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
   const [chatInput, setChatInput] = useState("");
   const [layouts, setLayouts] = useState<DashboardLayouts>(defaultDashboardLayouts);
 
+  // Unsaved changes state
+  const [draftConfig, setDraftConfig] = useState<Partial<DashboardHubConfig>>({});
+  const isDirty = Object.keys(draftConfig).length > 0;
+
+  // Route blocking
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+
   // Fetch real data for the active hub
   const { data: connectionsData } = useQuery(
     orpc.hub.getConnections.queryOptions({
@@ -45,13 +58,22 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
   );
   
   const { data: rulesData } = useQuery(
-    orpc.moderation.getAntiSwearRules.queryOptions({
+    orpc.moderation.getAutomodRules.queryOptions({
       input: { hubId: selectedHubId }, 
       enabled: !!selectedHubId
     })
   );
 
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { mutateAsync: patchHubConfig, isPending: isSavingHubConfig } = useMutation(orpc.hub.patchConfig.mutationOptions());
+  const { mutateAsync: sendMessageMutation } = useMutation(orpc.hub.sendMessage.mutationOptions());
+  const { mutateAsync: toggleConnectionMutation } = useMutation(orpc.hub.toggleConnection.mutationOptions());
+  const { mutateAsync: disconnectConnectionMutation } = useMutation(orpc.hub.disconnectConnection.mutationOptions());
+  const { mutateAsync: createConnectionMutation } = useMutation(orpc.hub.createConnection.mutationOptions());
+  const { mutateAsync: deleteHubMutation } = useMutation(orpc.hub.deleteHub.mutationOptions());
+  const { mutateAsync: transferOwnershipMutation } = useMutation(orpc.hub.transferOwnership.mutationOptions());
+  const { mutateAsync: nukeMessagesMutation } = useMutation(orpc.hub.nukeMessages.mutationOptions());
 
   const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
     orpc.hub.getRecentMessages.infiniteOptions({
@@ -158,6 +180,26 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
     }
   }, [isLoading, hubsList.length, selectedHubId]);
 
+  const handleSelectHub = (hubId: string) => {
+    if (hubId === selectedHubId) return;
+    
+    if (isDirty) {
+      Modal.confirm({
+        title: "Unsaved Changes",
+        content: "You have unsaved changes on this hub. Are you sure you want to switch? Your changes will be lost.",
+        okText: "Discard Changes",
+        okType: "danger",
+        cancelText: "Cancel",
+        onOk: () => {
+          setDraftConfig({});
+          setSelectedHubId(hubId);
+        }
+      });
+    } else {
+      setSelectedHubId(hubId);
+    }
+  };
+
   const handleLayoutChange = (tab: 'moderation' | 'general', newLayout: any, allLayouts: any) => {
     setLayouts(prev => {
       const next = { ...prev, [tab]: allLayouts };
@@ -179,21 +221,22 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
   const activeHubFull = hubsList.find(h => h.metadata.id === selectedHubId);
   const activeHub = hubs.find(h => h.id === selectedHubId) || hubs[0] || mockFallbackHub;
 
-  // Construct live config from fetched resources
-  const activeConfig: DashboardHubConfig = useMemo(() => {
+  // Construct base server config
+  const serverConfig: DashboardHubConfig = useMemo(() => {
     return {
       nsfw: activeHubFull?.spec.nsfw || false,
       locked: activeHubFull?.spec.locked || false,
       profanityFilter: rulesData ? rulesData.length > 0 : false,
       appealCooldown: activeHubFull?.spec.appealCooldownHours || 168,
       welcomeMessage: activeHubFull?.spec.welcomeMessage || "",
-      antiSwearRules: rulesData ? rulesData.map(r => ({
+      automodRules: rulesData ? rulesData.map(r => ({
         id: r.metadata.id,
         pattern: r.spec.patterns[0]?.pattern || r.spec.name,
         matchType: (r.spec.patterns[0]?.matchType?.toLowerCase() as any) || "wildcard",
         actions: r.spec.actions
       })) : [],
       connections: connectionsData ? connectionsData.map(c => ({
+        id: c.metadata.id,
         name: c.status.serverName,
         channel: c.status.channelName || `#${c.spec.channelId}`,
         connected: c.spec.connected
@@ -207,32 +250,260 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
         avatarUrl: m.status.authorAvatarUrl ? m.status.authorAvatarUrl.replace(/\.(png|jpg|jpeg|gif)/i, '.webp') : null,
         createdAt: m.metadata.createdAt
       })) || [],
-      permissions: activeHubFull?.metadata.permissions || {
-        MANAGE_HUB_SETTINGS: false,
-        MANAGE_CONNECTIONS: false,
-        MANAGE_MODERATORS: false,
-        MANAGE_RULES: false,
-        MODERATE_MESSAGES: false,
-        VIEW_ANALYTICS: false,
-        VIEW_LOGS: false,
-      },
+      permissions: activeHubFull?.metadata.permissions || getDefaultPermissions(),
       effectiveRole: activeHubFull?.metadata.effectiveRole || "NONE",
+      settings: activeHubFull?.spec.settings || 0,
     };
   }, [activeHubFull, connectionsData, rulesData, messagesData]);
 
-  // Mutation handlers are no-ops for now, will be implemented in future phase
-  const handleToggleConfig = () => console.log("Mutations not yet hooked up");
-  const handleNumberConfigChange = () => console.log("Mutations not yet hooked up");
-  const handleTextConfigChange = () => console.log("Mutations not yet hooked up");
-  const handleToggleConnection = () => console.log("Mutations not yet hooked up");
-  const handleDisconnectConnection = () => console.log("Mutations not yet hooked up");
-  const handleAddConnection = () => console.log("Mutations not yet hooked up");
-  const handleAddAntiSwearRule = () => console.log("Mutations not yet hooked up");
-  const handleRemoveAntiSwearRule = () => console.log("Mutations not yet hooked up");
-  const handleSendChat = () => {
-    if (!chatInput.trim()) return;
-    console.log("Chat sending not yet hooked up");
-    setChatInput("");
+  // Merge server config with local unsaved drafts
+  const activeConfig = useMemo(() => {
+    return { ...serverConfig, ...draftConfig };
+  }, [serverConfig, draftConfig]);
+
+  const handleToggleConfig = (field: "nsfw" | "locked" | "profanityFilter") => {
+    // Note: profanityFilter is a separate resource (rules). Here we only buffer Hub settings.
+    if (field === "profanityFilter") {
+      message.info("Anti-swear rules are managed independently below.");
+      return;
+    }
+    setDraftConfig(prev => {
+      const newVal = prev[field] !== undefined ? !prev[field] : !serverConfig[field];
+      // If we toggled it back to original, remove from draft
+      if (newVal === serverConfig[field]) {
+        const { [field]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [field]: newVal };
+    });
+  };
+
+  const handleNumberConfigChange = (field: "appealCooldown", value: number) => {
+    setDraftConfig(prev => {
+      if (value === serverConfig[field]) {
+        const { [field]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [field]: value };
+    });
+  };
+
+  const handleTextConfigChange = (field: "welcomeMessage", value: string) => {
+    setDraftConfig(prev => {
+      if (value === serverConfig[field]) {
+        const { [field]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [field]: value };
+    });
+  };
+
+  const handleSettingsFlagChange = (flag: string, enabled: boolean) => {
+    setDraftConfig(prev => {
+      const currentSettings = prev.settings !== undefined ? prev.settings : serverConfig.settings;
+      const flagBit = HubSettingsFlags[flag as keyof typeof HubSettingsFlags] || 0;
+      const newSettings = enabled ? (currentSettings | flagBit) : (currentSettings & ~flagBit);
+      if (newSettings === serverConfig.settings) {
+        const { settings: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, settings: newSettings };
+    });
+  };
+
+  const { mutateAsync: batchUpdateAutomodRules } = useMutation(orpc.moderation.batchUpdateAutomodRules.mutationOptions());
+
+  const handleSaveChanges = async () => {
+    if (!isDirty) return;
+    try {
+      if (draftConfig.nsfw !== undefined || draftConfig.locked !== undefined || draftConfig.appealCooldown !== undefined || draftConfig.welcomeMessage !== undefined || draftConfig.settings !== undefined) {
+        await patchHubConfig({
+          hubId: selectedHubId,
+          nsfw: draftConfig.nsfw,
+          locked: draftConfig.locked,
+          appealCooldownHours: draftConfig.appealCooldown,
+          welcomeMessage: draftConfig.welcomeMessage,
+          settings: draftConfig.settings,
+        });
+      }
+
+      if (draftConfig.automodRules !== undefined) {
+        await batchUpdateAutomodRules({
+          hubId: selectedHubId,
+          rules: draftConfig.automodRules,
+        });
+      }
+
+      message.success("Changes saved successfully!");
+      setDraftConfig({});
+      queryClient.invalidateQueries({ queryKey: orpc.hub.getUserHubs.key() });
+      queryClient.invalidateQueries({ queryKey: orpc.moderation.getAutomodRules.key() });
+    } catch (e: any) {
+      message.error(e.message || "Failed to save changes.");
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setDraftConfig({});
+  };
+  const handleToggleConnection = async (connectionId: string) => {
+    const conn = activeConfig.connections.find(c => c.id === connectionId);
+    if (!conn) return;
+    try {
+      await toggleConnectionMutation({ connectionId, enabled: !conn.connected, hubId: selectedHubId });
+      message.success(conn.connected ? "Connection paused." : "Connection resumed.");
+      queryClient.invalidateQueries({ queryKey: orpc.hub.getConnections.key() });
+    } catch (e: any) {
+      message.error(e.message || "Failed to toggle connection.");
+    }
+  };
+
+  const handleDisconnectConnection = async (connectionId: string) => {
+    Modal.confirm({
+      title: "Disconnect Server",
+      content: "Are you sure you want to disconnect this server? The channel will no longer receive hub messages.",
+      okText: "Disconnect",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await disconnectConnectionMutation({ connectionId, hubId: selectedHubId });
+          message.success("Server disconnected.");
+          queryClient.invalidateQueries({ queryKey: orpc.hub.getConnections.key() });
+        } catch (e: any) {
+          message.error(e.message || "Failed to disconnect.");
+        }
+      },
+    });
+  };
+
+  const handleAddConnection = () => {
+    let channelId = "";
+    let serverId = "";
+    let webhookUrl = "";
+    Modal.confirm({
+      title: "Connect a Discord Server",
+      content: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
+          <Input placeholder="Channel ID" onChange={(e) => { channelId = e.target.value; }} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #2d2d34", color: "white" }} />
+          <Input placeholder="Server ID" onChange={(e) => { serverId = e.target.value; }} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #2d2d34", color: "white" }} />
+          <Input placeholder="Webhook URL" onChange={(e) => { webhookUrl = e.target.value; }} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #2d2d34", color: "white" }} />
+        </div>
+      ),
+      okText: "Connect",
+      cancelText: "Cancel",
+      onOk: async () => {
+        if (!channelId || !serverId || !webhookUrl) {
+          message.error("All fields are required.");
+          return;
+        }
+        try {
+          await createConnectionMutation({ hubId: selectedHubId, channelId, serverId, webhookUrl });
+          message.success("Server connected.");
+          queryClient.invalidateQueries({ queryKey: orpc.hub.getConnections.key() });
+        } catch (e: any) {
+          message.error(e.message || "Failed to connect server.");
+        }
+      },
+    });
+  };
+
+  const handleDeleteHub = () => {
+    if (activeConfig.effectiveRole !== "OWNER") return;
+    Modal.confirm({
+      title: "Delete Hub",
+      content: `Are you sure you want to permanently delete "${activeHub.name}"? This action cannot be undone. All messages, connections, and settings will be lost.`,
+      okText: "Delete Hub",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await deleteHubMutation({ hubId: selectedHubId });
+          message.success("Hub deleted.");
+          setDraftConfig({});
+          navigate("/dashboard");
+        } catch (e: any) {
+          message.error(e.message || "Failed to delete hub.");
+        }
+      },
+    });
+  };
+
+  const handleTransferOwnership = () => {
+    if (activeConfig.effectiveRole !== "OWNER") return;
+    let newOwnerId = "";
+    Modal.confirm({
+      title: "Transfer Ownership",
+      content: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
+          <Input placeholder="New owner's User ID" onChange={(e) => { newOwnerId = e.target.value; }} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #2d2d34", color: "white" }} />
+        </div>
+      ),
+      okText: "Transfer",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        if (!newOwnerId) {
+          message.error("User ID is required.");
+          return;
+        }
+        try {
+          await transferOwnershipMutation({ hubId: selectedHubId, newOwnerId });
+          message.success("Ownership transferred.");
+          queryClient.invalidateQueries({ queryKey: orpc.hub.getUserHubs.key() });
+        } catch (e: any) {
+          message.error(e.message || "Failed to transfer ownership.");
+        }
+      },
+    });
+  };
+
+  const handleNukeMessages = () => {
+    if (!activeConfig.permissions.LOCKDOWN_HUB) return;
+    Modal.confirm({
+      title: "Nuke All Messages",
+      content: `Are you sure you want to permanently delete ALL messages in "${activeHub.name}"? This action cannot be undone.`,
+      okText: "Nuke Messages",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          const result = await nukeMessagesMutation({ hubId: selectedHubId });
+          message.success(`${result.deletedCount || 0} messages deleted.`);
+          queryClient.invalidateQueries({ queryKey: orpc.hub.getRecentMessages.key() });
+        } catch (e: any) {
+          message.error(e.message || "Failed to nuke messages.");
+        }
+      },
+    });
+  };
+
+  const handleAddAutomodRule = (rule: AutomodRule) => {
+    setDraftConfig(prev => {
+      const currentRules = prev.automodRules || serverConfig.automodRules || [];
+      return { ...prev, automodRules: [...currentRules, rule] };
+    });
+  };
+
+  const handleRemoveAutomodRule = (id: string) => {
+    setDraftConfig(prev => {
+      const currentRules = prev.automodRules || serverConfig.automodRules || [];
+      return { ...prev, automodRules: currentRules.filter((r: AutomodRule) => r.id !== id) };
+    });
+  };
+  const handleSendChat = async () => {
+    if (!chatInput.trim() || !selectedHubId) return;
+    try {
+      await sendMessageMutation({
+        hubId: selectedHubId,
+        content: chatInput.trim(),
+        guildId: "web-dashboard",
+        channelId: "web-dashboard",
+      });
+      setChatInput("");
+    } catch (e: any) {
+      message.error(e.message || "Failed to send message.");
+    }
   };
 
   // Provide a dummy configs record for the HubSelector since it expects one
@@ -272,9 +543,9 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
                     onChatInputChange={setChatInput}
                     onSendChat={handleSendChat}
                     onToggleConfig={handleToggleConfig}
-                    onAppealCooldownChange={(value) => handleNumberConfigChange()}
-                    onAddAntiSwearRule={handleAddAntiSwearRule}
-                    onRemoveAntiSwearRule={handleRemoveAntiSwearRule}
+                    onAppealCooldownChange={(v) => handleNumberConfigChange('appealCooldown', v)}
+                    onAddAutomodRule={handleAddAutomodRule}
+                    onRemoveAutomodRule={handleRemoveAutomodRule}
                     fetchNextPage={fetchNextPage}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
@@ -291,13 +562,19 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
                     layout={layouts.general}
                     onLayoutChange={(layout, allLayouts) => handleLayoutChange('general', layout, allLayouts)}
                     activeConfig={activeConfig}
+                    activeHubId={selectedHubId}
                     onAddConnection={handleAddConnection}
                     onToggleConnection={handleToggleConnection}
                     onDisconnectConnection={handleDisconnectConnection}
-                    onWelcomeMessageChange={(value) => handleTextConfigChange()}
+                    onDeleteHub={handleDeleteHub}
+                    onTransferOwnership={handleTransferOwnership}
+                    onNukeMessages={handleNukeMessages}
+                    onWelcomeMessageChange={(value) => handleTextConfigChange("welcomeMessage", value)}
+                    onSettingsFlagChange={handleSettingsFlagChange}
                   />
                 )
-              }
+              },
+              // TODO: Add a new Server Settings tab to manage global automod packs per-server.
             ]}
           />
           </div>
@@ -306,8 +583,54 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
           )}
         </Col>
 
-        <HubSelector hubs={hubs} configs={dummyConfigs as any} selectedHubId={selectedHubId} onSelectHub={setSelectedHubId} onCreateHub={() => setShowOnboarding(true)} />
+        <HubSelector hubs={hubs} configs={dummyConfigs as any} selectedHubId={selectedHubId} onSelectHub={handleSelectHub} onCreateHub={() => setShowOnboarding(true)} />
       </Row>
+
+      <UnsavedChangesBanner 
+        isDirty={isDirty} 
+        onReset={handleDiscardChanges} 
+        onSave={handleSaveChanges} 
+        isSaving={isSavingHubConfig} 
+      />
+
+      <Modal
+        title={<span style={{ color: "white" }}>Unsaved Changes</span>}
+        open={blocker.state === "blocked"}
+        onOk={() => {
+          setDraftConfig({});
+          blocker.proceed?.();
+        }}
+        onCancel={() => blocker.reset?.()}
+        okText="Discard Changes"
+        okType="danger"
+        cancelText="Keep Editing"
+        styles={{
+          mask: {
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          },
+          content: {
+            background: "rgba(20, 20, 25, 0.75)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: 16,
+            boxShadow: "0 24px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(48px)",
+            WebkitBackdropFilter: "blur(48px)",
+            padding: 24,
+            overflow: "hidden",
+            position: "relative",
+          },
+          header: {
+            background: "transparent",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            paddingBottom: 16,
+            marginBottom: 16
+          }
+        }}
+      >
+        <p style={{ color: "rgba(255,255,255,0.65)" }}>You have unsaved changes. Are you sure you want to leave this page? Your changes will be lost.</p>
+      </Modal>
 
       <CreateHubWizard
         mode="modal"

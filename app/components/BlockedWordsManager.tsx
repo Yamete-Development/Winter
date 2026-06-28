@@ -1,19 +1,19 @@
 import { useState } from "react";
-import { Typography, Space, Tag, Input, Button, Table, Modal, Form, Select, Popconfirm } from "antd";
-import { PlusOutlined, DeleteOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
+import { Typography, Space, Tag, Input, Button, Modal, Form, Select, Popconfirm } from "antd";
+import { PlusOutlined, DeleteOutlined, SearchOutlined, WarningOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 
-export interface AntiSwearRule {
+export interface AutomodRule {
   id: string;
   pattern: string;
-  matchType: string;
+  matchType: "prefix" | "suffix" | "wildcard" | "exact";
   actions: string[];
 }
 
 interface BlockedWordsManagerProps {
-  rules: AntiSwearRule[];
-  onAddRule: (rule: AntiSwearRule) => void;
+  rules: AutomodRule[];
+  onAddRule: (rule: AutomodRule) => void;
   onRemoveRule: (id: string) => void;
 }
 
@@ -35,60 +35,8 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
 
   const filteredRules = rules.filter(r => r.pattern.toLowerCase().includes(searchText.toLowerCase()));
 
-  const columns = [
-    {
-      title: 'Pattern',
-      dataIndex: 'pattern',
-      key: 'pattern',
-      render: (text: string) => <Text strong style={{ color: 'white' }}>{text}</Text>,
-    },
-    {
-      title: 'Match Type',
-      dataIndex: 'matchType',
-      key: 'matchType',
-      render: (type: string) => (
-        <Tag color="blue" style={{ background: 'rgba(255,255,255,0.05)' }}>
-          {type.toUpperCase()}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Actions',
-      dataIndex: 'actions',
-      key: 'actions',
-      render: (actions: string[]) => (
-        <Space size={[0, 4]} wrap>
-          {actions.map(action => {
-            let color = "default";
-            if (action === 'BLOCK_MESSAGE') color = "orange";
-            if (action === 'WARN') color = "gold";
-            if (action === 'MUTE') color = "volcano";
-            if (action === 'BAN') color = "red";
-            if (action === 'SEND_ALERT') color = "cyan";
-            return <Tag color={color} variant="filled" key={action}>{action}</Tag>;
-          })}
-        </Space>
-      ),
-    },
-    {
-      title: '',
-      key: 'delete',
-      width: 60,
-      render: (_: any, record: AntiSwearRule) => (
-        <Popconfirm
-          title="Delete rule?"
-          onConfirm={() => onRemoveRule(record.id)}
-          okText="Yes"
-          cancelText="No"
-        >
-          <Button type="text" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
-  ];
-
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
           <Text strong style={{ color: 'white' }}>AutoMod Patterns</Text>
@@ -100,7 +48,7 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
           type="primary" 
           icon={<PlusOutlined />} 
           onClick={() => setIsModalOpen(true)}
-          style={{ background: '#9146ff', border: 'none' }}
+          style={{ background: '#9146ff', border: 'none', boxShadow: "none" }}
         >
           New Rule
         </Button>
@@ -111,45 +59,108 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
         placeholder="Filter rules..." 
         value={searchText}
         onChange={e => setSearchText(e.target.value)}
-        style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', marginBottom: 16 }} 
+        style={{ 
+          background: 'rgba(0,0,0,0.3)', 
+          border: '1px solid rgba(255,255,255,0.1)', 
+          marginBottom: 16,
+          color: "white" 
+        }} 
       />
 
-      <Table 
-        dataSource={filteredRules} 
-        columns={columns} 
-        rowKey="id"
-        pagination={{ pageSize: 4, size: 'small', style: { marginBottom: 0 } }}
-        size="small"
-        scroll={{ y: 240 }}
-        style={{ 
-          background: 'rgba(0,0,0,0.2)', 
-          border: '1px solid rgba(255,255,255,0.05)',
-          borderRadius: 8
-        }}
-        components={{
-          header: {
-            cell: (props: any) => <th {...props} style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)' }} />
-          },
-          body: {
-            row: (props: any) => <tr {...props} className="hover:bg-[rgba(255,255,255,0.02)]" />,
-            cell: (props: any) => <td {...props} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }} />
-          }
-        }}
-      />
+      <div className="dark-scrollbar" style={{ 
+        flex: 1, 
+        overflowY: "auto", 
+        background: 'rgba(0,0,0,0.2)', 
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 8,
+        display: "flex",
+        flexDirection: "column"
+      }}>
+        {filteredRules.length === 0 ? (
+          <div style={{ padding: 24, textAlign: "center", color: "rgba(255,255,255,0.45)" }}>
+            <WarningOutlined style={{ fontSize: 24, marginBottom: 8 }} />
+            <p>No rules found.</p>
+          </div>
+        ) : (
+          filteredRules.map(rule => (
+            <div key={rule.id} style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              padding: "12px 16px",
+              borderBottom: "1px solid rgba(255,255,255,0.02)",
+              transition: "background 0.2s"
+            }} className="hover:bg-[rgba(255,255,255,0.02)]">
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <Text strong style={{ color: 'white', fontSize: "0.95rem" }}>{rule.pattern}</Text>
+                <Tag color="blue" style={{ background: 'rgba(255,255,255,0.05)', border: "1px solid rgba(255,255,255,0.1)", margin: 0 }}>
+                  {rule.matchType.toUpperCase()}
+                </Tag>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <Space size={[0, 4]} wrap>
+                  {rule.actions.map(action => {
+                    let color = "default";
+                    if (action === 'BLOCK_MESSAGE') color = "orange";
+                    if (action === 'WARN') color = "gold";
+                    if (action === 'MUTE') color = "volcano";
+                    if (action === 'BAN') color = "red";
+                    if (action === 'SEND_ALERT') color = "cyan";
+                    return <Tag color={color} variant="filled" key={action}>{action}</Tag>;
+                  })}
+                </Space>
+                <Popconfirm
+                  title="Delete rule?"
+                  onConfirm={() => onRemoveRule(rule.id)}
+                  okText="Yes"
+                  cancelText="No"
+                  placement="left"
+                >
+                  <Button type="text" danger icon={<DeleteOutlined />} style={{ color: "rgba(245, 34, 45, 0.7)" }} />
+                </Popconfirm>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       <Modal 
-        title="Add AutoMod Rule" 
+        title={<span style={{ color: "white" }}>Add AutoMod Rule</span>} 
         open={isModalOpen} 
         onCancel={() => setIsModalOpen(false)}
         footer={null}
+        styles={{
+          mask: {
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          },
+          content: {
+            background: "rgba(20, 20, 25, 0.75)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: 16,
+            boxShadow: "0 24px 48px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+            backdropFilter: "blur(48px)",
+            WebkitBackdropFilter: "blur(48px)",
+            padding: 24,
+            overflow: "hidden",
+            position: "relative",
+          },
+          header: {
+            background: "transparent",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            paddingBottom: 16,
+            marginBottom: 16
+          }
+        }}
       >
         <Form form={form} layout="vertical" onFinish={handleAdd}>
-          <Form.Item name="pattern" label="Pattern/Word" rules={[{ required: true, message: 'Please enter a pattern' }]}>
-            <Input placeholder="e.g. *scam* or https://*" />
+          <Form.Item name="pattern" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Pattern/Word</span>} rules={[{ required: true, message: 'Please enter a pattern' }]}>
+            <Input placeholder="e.g. *scam* or https://*" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
           </Form.Item>
           
-          <Form.Item name="matchType" label="Match Type" initialValue="wildcard">
-            <Select>
+          <Form.Item name="matchType" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Match Type</span>} initialValue="wildcard">
+            <Select dropdownStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.1)" }}>
               <Select.Option value="exact">Exact Match</Select.Option>
               <Select.Option value="wildcard">Wildcard Contains</Select.Option>
               <Select.Option value="prefix">Prefix Match</Select.Option>
@@ -157,9 +168,24 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
             </Select>
           </Form.Item>
 
-          <Form.Item name="actions" label="Automated Actions" initialValue={['BLOCK_MESSAGE', 'SEND_ALERT']}>
-            <Select mode="multiple" placeholder="Select consequence">
+          <Form.Item name="actions" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Automated Actions</span>} initialValue={['BLOCK_MESSAGE', 'SEND_ALERT']}>
+            <Select 
+              mode="multiple" 
+              placeholder="Select consequence" 
+              dropdownStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.1)" }}
+              onChange={(value: string[]) => {
+                // Enforce mutual exclusivity
+                if (value.includes('CENSOR_WORD') && value.includes('BLOCK_MESSAGE')) {
+                  const lastAdded = value[value.length - 1];
+                  const newValues = value.filter(v => 
+                    lastAdded === 'CENSOR_WORD' ? v !== 'BLOCK_MESSAGE' : v !== 'CENSOR_WORD'
+                  );
+                  form.setFieldsValue({ actions: newValues });
+                }
+              }}
+            >
               <Select.Option value="BLOCK_MESSAGE">Block Message</Select.Option>
+              <Select.Option value="CENSOR_WORD">Censor Word</Select.Option>
               <Select.Option value="WARN">Warn User</Select.Option>
               <Select.Option value="MUTE">Mute User</Select.Option>
               <Select.Option value="BAN">Ban User</Select.Option>
@@ -167,14 +193,14 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
             </Select>
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
             <Space>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" style={{ background: '#9146ff' }}>Add Rule</Button>
+              <Button onClick={() => setIsModalOpen(false)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white" }}>Cancel</Button>
+              <Button type="primary" htmlType="submit" style={{ background: '#9146ff', border: "none" }}>Add Rule</Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 }

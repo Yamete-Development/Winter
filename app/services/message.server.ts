@@ -25,9 +25,7 @@ export const messageService = {
       .orderBy(desc(message.createdAt))
       .limit(limit);
 
-    // Return items newest-first
     const items = results.map(result => {
-      // Force Postgres timestamp string to be interpreted as UTC by appending Z
       const rawCreatedAt = result.message.createdAt;
       const createdAtUTC = rawCreatedAt.endsWith('Z') ? rawCreatedAt : rawCreatedAt.replace(' ', 'T') + 'Z';
       
@@ -53,9 +51,36 @@ export const messageService = {
     };
   });
 
-    // nextCursor is the raw createdAt of the oldest message fetched for correct database pagination
     const nextCursor = items.length === limit ? results[results.length - 1].message.createdAt : null;
 
     return { items, nextCursor };
-  }
+  },
+
+  async sendMessage(
+    hubId: string,
+    content: string,
+    authorId: string,
+    guildId: string,
+    channelId: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      await db.insert(message).values({
+        id,
+        hubId,
+        content,
+        authorId,
+        guildId,
+        channelId,
+        status: "ACTIVE",
+      });
+
+      return { success: true, messageId: id };
+    } catch (error) {
+      console.error("Failed to send message", error);
+      return { success: false, error: "Failed to send message." };
+    }
+  },
 };

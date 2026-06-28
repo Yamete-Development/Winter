@@ -527,3 +527,33 @@ Before generating code:
 10. Would this still work if 10 new resource types are added?
 
 If any answer is yes, refactor before output.
+
+---
+
+# 21. UI Design & Aesthetics
+
+The application uses a highly specific **Glassmorphism** design language. You must strictly adhere to these visual standards.
+
+Never invent plain or flat UI elements (like solid hex backgrounds `#1e1e24` or basic button colors) unless explicitly building an entirely separate standard.
+
+## Core Visual Traits
+- **Backgrounds**: Deep, dark, semi-transparent layers. Prefer `rgba(20, 20, 25, 0.4)` over solid colors.
+- **Backdrop Filters**: Heavy blurring is mandatory to achieve the glass effect (e.g., `backdropFilter: "blur(24px)"`).
+- **Borders**: Extremely subtle white borders to define edges (e.g., `1px solid rgba(255,255,255,0.08)`).
+
+## Referencing Shared Styles
+Always reuse exported styles from the shared dashboard components rather than redefining them inline.
+
+Good:
+```tsx
+import { dashboardGlassCardStyle } from "~/components/dashboard/shared";
+
+<div style={{ ...dashboardGlassCardStyle, padding: 24 }}>...</div>
+```
+
+Bad:
+```tsx
+<div style={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.1)" }}>...</div>
+```
+
+If you need a new reusable structural style, add it to `app/components/dashboard/shared.tsx` and export it.

@@ -4,6 +4,8 @@ import type { Route } from "./+types/layout";
 import { requireUser } from "../../services/auth.server";
 import { Layout, Menu, ConfigProvider, theme } from "antd";
 import { AppstoreOutlined, SettingOutlined } from "@ant-design/icons";
+import { orpc } from "../../lib/orpc";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 const DASHBOARD_BACKGROUND_STORAGE_KEY = "interchat-dashboard-background";
 
@@ -129,6 +131,12 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const [backgroundPreference, setBackgroundPreference] =
     useState<DashboardBackgroundPreference>(DEFAULT_DASHBOARD_BACKGROUND);
 
+  const { data: serverPrefs } = useQuery(orpc.preferences.getUserPreferences.queryOptions());
+
+  const { mutate: syncPreferenceToServer } = useMutation(
+    orpc.preferences.updateDashboardPreference.mutationOptions()
+  );
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -137,6 +145,12 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
     const saved = window.localStorage.getItem(DASHBOARD_BACKGROUND_STORAGE_KEY);
 
     if (!saved) {
+      if (serverPrefs?.dashboardPreference) {
+        const normalized = normalizeDashboardBackground(serverPrefs.dashboardPreference);
+        if (normalized) {
+          setBackgroundPreference(normalized);
+        }
+      }
       return;
     }
 
@@ -150,7 +164,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
     } catch {
       window.localStorage.removeItem(DASHBOARD_BACKGROUND_STORAGE_KEY);
     }
-  }, []);
+  }, [serverPrefs]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -165,10 +179,12 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
 
   const updateBackgroundPreference = (next: DashboardBackgroundPreference) => {
     setBackgroundPreference(next);
+    syncPreferenceToServer({ preference: next as unknown as Record<string, any> });
   };
 
   const resetBackgroundPreference = () => {
     setBackgroundPreference(DEFAULT_DASHBOARD_BACKGROUND);
+    syncPreferenceToServer({ preference: DEFAULT_DASHBOARD_BACKGROUND as unknown as Record<string, any> });
   };
 
   const menuItems = [

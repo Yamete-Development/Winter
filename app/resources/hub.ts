@@ -22,6 +22,7 @@ export type HubSpec = {
   nsfw: boolean;
   rules: string[];
   appealCooldownHours: number;
+  settings: number;
 };
 
 export type HubStatus = {

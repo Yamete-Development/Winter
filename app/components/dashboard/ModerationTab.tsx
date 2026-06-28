@@ -2,7 +2,7 @@ import { useEffect, useRef, useMemo, useLayoutEffect, useState } from "react";
 import { CrownFilled, PlusOutlined, SafetyCertificateFilled, LoadingOutlined } from "@ant-design/icons";
 import { Avatar, Badge, Button, Divider, Dropdown, Input, Space, Switch, Tag, Typography, message, Spin, Segmented, Skeleton } from "antd";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import type { AntiSwearRule } from "../BlockedWordsManager";
+import type { AutomodRule } from "../BlockedWordsManager";
 import { BlockedWordsManager } from "../BlockedWordsManager";
 import { GridItemWrapper, GridTabContent } from "./GridTabContent";
 import { DashboardSectionCard, DashboardSectionTitle } from "./shared";
@@ -20,7 +20,6 @@ const { Title, Text } = Typography;
 const moderationToggles = [
   { label: "Global NSFW Block", desc: "Block explicit media and NSFW content.", field: "nsfw" as const },
   { label: "Broadcast Lock", desc: "Freeze chat forwarding across all guilds.", field: "locked" as const },
-  { label: "Anti-Swear Rules", desc: "Automatically censor profanities and offensive text.", field: "profanityFilter" as const },
 ];
 
 const mockStaff = [
@@ -39,10 +38,10 @@ type ModerationTabProps = {
   chatInput: string;
   onChatInputChange: (value: string) => void;
   onSendChat: () => void;
-  onToggleConfig: (field: "nsfw" | "locked" | "profanityFilter") => void;
+  onToggleConfig: (field: "nsfw" | "locked") => void;
   onAppealCooldownChange: (value: number) => void;
-  onAddAntiSwearRule: (rule: AntiSwearRule) => void;
-  onRemoveAntiSwearRule: (id: string) => void;
+  onAddAutomodRule: (rule: AutomodRule) => void;
+  onRemoveAutomodRule: (id: string) => void;
   fetchNextPage: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
@@ -60,8 +59,8 @@ export function ModerationTab({
   onSendChat,
   onToggleConfig,
   onAppealCooldownChange,
-  onAddAntiSwearRule,
-  onRemoveAntiSwearRule,
+  onAddAutomodRule,
+  onRemoveAutomodRule,
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
@@ -96,7 +95,7 @@ export function ModerationTab({
       <GridTabContent layout={layout} onLayoutChange={onLayoutChange}>
         <GridItemWrapper key="liveFeed">
           <DashboardSectionCard styles={{ body: { padding: 0, display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" } }}>
-            <div style={{ height: 120, flexShrink: 0, position: "relative", background: `linear-gradient(to top, rgba(14,14,17,1) 0%, rgba(14,14,17,0.4) 100%), url('${activeHub.bannerUrl}') center/cover` }}>
+            <div className="hub-banner-drag" style={{ height: 120, flexShrink: 0, position: "relative", cursor: "grab", background: `linear-gradient(to top, rgba(14,14,17,1) 0%, rgba(14,14,17,0.4) 100%), url('${activeHub.bannerUrl}') center/cover` }}>
               <div style={{ position: "absolute", bottom: -16, left: 20, display: "flex", alignItems: "flex-end", gap: 16 }}>
                 <Avatar shape="square" size={64} src={activeHub.avatarUrl} style={{ borderRadius: 14, border: "3px solid #0e0e11", background: "rgba(0,0,0,0.5)" }} />
                 <div style={{ paddingBottom: 18 }}>
@@ -234,7 +233,7 @@ export function ModerationTab({
         <GridItemWrapper key="blockedWords">
           <DashboardSectionCard title={<DashboardSectionTitle>Automod: Blocked Words</DashboardSectionTitle>}>
             <div style={!activeConfig.permissions.MANAGE_RULES ? { pointerEvents: "none", opacity: 0.6 } : {}}>
-              <BlockedWordsManager rules={activeConfig.antiSwearRules} onAddRule={onAddAntiSwearRule} onRemoveRule={onRemoveAntiSwearRule} />
+              <BlockedWordsManager rules={activeConfig.automodRules} onAddRule={onAddAutomodRule} onRemoveRule={onRemoveAutomodRule} />
             </div>
           </DashboardSectionCard>
         </GridItemWrapper>

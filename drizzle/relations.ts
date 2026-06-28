@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { hub, connection, serverData, message, broadcast, user, blockWord, autoModEscalationRule, antiSwearRule, nsfwOverride, nsfwReviewQueue, antiSwearPattern, antiSwearWhitelist, appeal, infraction, lobby, lobbyParticipant, lobbyConnection, blacklist, hubReport, lobbyReport, hubActivityMetrics, globalReport, hubInvite, hubAnnouncement, hubLogConfig, hubMessageReaction, hubModerator, hubReview, hubRulesAcceptance, hubUpvote, serverBlacklist, reputationLog, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, userAchievementProgress } from "./schema";
+import { hub, connection, serverData, message, broadcast, user, blockWord, autoModEscalationRule, automodRule, nsfwOverride, nsfwReviewQueue, automodPattern, automodWhitelist, appeal, infraction, lobby, lobbyParticipant, lobbyConnection, blacklist, hubReport, lobbyReport, hubActivityMetrics, globalReport, hubInvite, hubAnnouncement, hubLogConfig, hubMessageReaction, hubModerator, hubReview, hubRulesAcceptance, hubUpvote, serverBlacklist, reputationLog, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, userAchievementProgress } from "./schema";
 
 export const connectionRelations = relations(connection, ({one}) => ({
 	hub: one(hub, {
@@ -17,7 +17,7 @@ export const hubRelations = relations(hub, ({one, many}) => ({
 	messages: many(message),
 	blockWords: many(blockWord),
 	autoModEscalationRules: many(autoModEscalationRule),
-	antiSwearRules: many(antiSwearRule),
+	automodRules: many(automodRule),
 	nsfwOverrides: many(nsfwOverride),
 	nsfwReviewQueues: many(nsfwReviewQueue),
 	user: one(user, {
@@ -45,7 +45,7 @@ export const serverDataRelations = relations(serverData, ({many}) => ({
 	connections: many(connection),
 	blockWords: many(blockWord),
 	autoModEscalationRules: many(autoModEscalationRule),
-	antiSwearRules: many(antiSwearRule),
+	automodRules: many(automodRule),
 	infractions: many(infraction),
 	serverBlacklists: many(serverBlacklist),
 	serverBlocklists_blockedServerId: many(serverBlocklist, {
@@ -104,7 +104,7 @@ export const blockWordRelations = relations(blockWord, ({one}) => ({
 export const userRelations = relations(user, ({many}) => ({
 	blockWords: many(blockWord),
 	autoModEscalationRules: many(autoModEscalationRule),
-	antiSwearRules: many(antiSwearRule),
+	automodRules: many(automodRule),
 	nsfwOverrides: many(nsfwOverride),
 	nsfwReviewQueues_authorId: many(nsfwReviewQueue, {
 		relationName: "nsfwReviewQueue_authorId_user_id"
@@ -113,7 +113,7 @@ export const userRelations = relations(user, ({many}) => ({
 		relationName: "nsfwReviewQueue_handledById_user_id"
 	}),
 	hubs: many(hub),
-	antiSwearWhitelists: many(antiSwearWhitelist),
+	automodWhitelists: many(automodWhitelist),
 	appeals: many(appeal),
 	lobbyParticipants: many(lobbyParticipant),
 	infractions_moderatorId: many(infraction, {
@@ -209,21 +209,21 @@ export const autoModEscalationRuleRelations = relations(autoModEscalationRule, (
 	}),
 }));
 
-export const antiSwearRuleRelations = relations(antiSwearRule, ({one, many}) => ({
+export const automodRuleRelations = relations(automodRule, ({one, many}) => ({
 	user: one(user, {
-		fields: [antiSwearRule.createdBy],
+		fields: [automodRule.createdBy],
 		references: [user.id]
 	}),
 	hub: one(hub, {
-		fields: [antiSwearRule.hubId],
+		fields: [automodRule.hubId],
 		references: [hub.id]
 	}),
 	serverDatum: one(serverData, {
-		fields: [antiSwearRule.serverId],
+		fields: [automodRule.serverId],
 		references: [serverData.id]
 	}),
-	antiSwearPatterns: many(antiSwearPattern),
-	antiSwearWhitelists: many(antiSwearWhitelist),
+	automodPatterns: many(automodPattern),
+	automodWhitelists: many(automodWhitelist),
 }));
 
 export const nsfwOverrideRelations = relations(nsfwOverride, ({one}) => ({
@@ -254,21 +254,21 @@ export const nsfwReviewQueueRelations = relations(nsfwReviewQueue, ({one}) => ({
 	}),
 }));
 
-export const antiSwearPatternRelations = relations(antiSwearPattern, ({one}) => ({
-	antiSwearRule: one(antiSwearRule, {
-		fields: [antiSwearPattern.ruleId],
-		references: [antiSwearRule.id]
+export const automodPatternRelations = relations(automodPattern, ({one}) => ({
+	automodRule: one(automodRule, {
+		fields: [automodPattern.ruleId],
+		references: [automodRule.id]
 	}),
 }));
 
-export const antiSwearWhitelistRelations = relations(antiSwearWhitelist, ({one}) => ({
+export const automodWhitelistRelations = relations(automodWhitelist, ({one}) => ({
 	user: one(user, {
-		fields: [antiSwearWhitelist.createdBy],
+		fields: [automodWhitelist.createdBy],
 		references: [user.id]
 	}),
-	antiSwearRule: one(antiSwearRule, {
-		fields: [antiSwearWhitelist.ruleId],
-		references: [antiSwearRule.id]
+	automodRule: one(automodRule, {
+		fields: [automodWhitelist.ruleId],
+		references: [automodRule.id]
 	}),
 }));
 

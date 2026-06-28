@@ -113,3 +113,28 @@ body.react-draggable-transparent-selection * {
   background: rgba(255,255,255,0.22);
 }
 
+::selection {
+  background: rgba(145, 70, 255, 0.4);
+  color: white;
+}
+
+/* Prevent text selection on interactive UI elements */
+.ant-btn,
+.ant-tag,
+.ant-avatar,
+.ant-badge,
+.ant-switch,
+.ant-segmented,
+.ant-dropdown,
+.ant-menu,
+.ant-card-head,
+.ant-modal-header,
+.ant-checkbox,
+.ant-radio,
+.ant-pagination,
+.ant-tabs-nav,
+.hub-banner-drag,
+.drag-handle {
+  user-select: none;
+  -webkit-user-select: none;
+}

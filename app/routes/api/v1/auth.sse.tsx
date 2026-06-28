@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs } from "@react-router/node";
+import type { LoaderFunctionArgs } from "react-router";
 import { SignJWT } from "jose";
 import { requireUser } from "../../../services/auth.server";
 import { permissionService } from "../../../services/permission.server";
