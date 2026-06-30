@@ -162,7 +162,34 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.moderation && parsed.general) {
-          setLayouts(parsed);
+          const merged = { ...defaultDashboardLayouts };
+          
+          const mergeTab = (tabKey: 'moderation' | 'general') => {
+            const defaultTab = defaultDashboardLayouts[tabKey];
+            const parsedTab = parsed[tabKey] || {};
+            const resultTab: any = {};
+            
+            for (const breakpoint of Object.keys(defaultTab)) {
+              const defaultItems = defaultTab[breakpoint] || [];
+              const parsedItems = parsedTab[breakpoint] || [];
+              
+              const parsedMap = new Map(parsedItems.map((item: any) => [item.i, item]));
+              
+              const mergedItems = defaultItems.map((defItem: any) => {
+                if (parsedMap.has(defItem.i)) {
+                  return parsedMap.get(defItem.i);
+                }
+                return defItem;
+              });
+              
+              resultTab[breakpoint] = mergedItems;
+            }
+            return resultTab;
+          };
+          
+          merged.moderation = mergeTab('moderation');
+          merged.general = mergeTab('general');
+          setLayouts(merged);
         }
       } catch (e) {
         console.error("Failed to parse layout from local storage");
