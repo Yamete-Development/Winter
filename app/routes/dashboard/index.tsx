@@ -610,7 +610,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
           },
-          content: {
+          body: {
             background: "rgba(20, 20, 25, 0.75)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             borderRadius: 16,

@@ -7,6 +7,8 @@ import { permissionService } from "./permission.server";
 
 const DEFAULT_HUB_ICON_URL = "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=300&q=80";
 
+// FIXME: USE IRIS
+
 export const hubService = {
   /**
    * Retrieves all hubs where the user is owner or moderator.

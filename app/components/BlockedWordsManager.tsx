@@ -8,7 +8,7 @@ export interface AutomodRule {
   id: string;
   pattern: string;
   matchType: "prefix" | "suffix" | "wildcard" | "exact";
-  actions: string[];
+  actions: any[];
 }
 
 interface BlockedWordsManagerProps {
@@ -24,7 +24,7 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
 
   const handleAdd = (values: any) => {
     onAddRule({
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).slice(2, 11),
       pattern: values.pattern.trim(),
       matchType: values.matchType,
       actions: values.actions,
@@ -44,9 +44,9 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
             Scale up to 10,000 regex & wildcard matches.
           </p>
         </div>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={() => setIsModalOpen(true)}
           style={{ background: '#9146ff', border: 'none', boxShadow: "none" }}
         >
@@ -54,23 +54,23 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
         </Button>
       </div>
 
-      <Input 
-        prefix={<SearchOutlined style={{ color: 'rgba(255,255,255,0.25)' }} />} 
-        placeholder="Filter rules..." 
+      <Input
+        prefix={<SearchOutlined style={{ color: 'rgba(255,255,255,0.25)' }} />}
+        placeholder="Filter rules..."
         value={searchText}
         onChange={e => setSearchText(e.target.value)}
-        style={{ 
-          background: 'rgba(0,0,0,0.3)', 
-          border: '1px solid rgba(255,255,255,0.1)', 
+        style={{
+          background: 'rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.1)',
           marginBottom: 16,
-          color: "white" 
-        }} 
+          color: "white"
+        }}
       />
 
-      <div className="dark-scrollbar" style={{ 
-        flex: 1, 
-        overflowY: "auto", 
-        background: 'rgba(0,0,0,0.2)', 
+      <div className="dark-scrollbar" style={{
+        flex: 1,
+        overflowY: "auto",
+        background: 'rgba(0,0,0,0.2)',
         border: '1px solid rgba(255,255,255,0.05)',
         borderRadius: 8,
         display: "flex",
@@ -83,9 +83,9 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
           </div>
         ) : (
           filteredRules.map(rule => (
-            <div key={rule.id} style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
+            <div key={rule.id} style={{
+              display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
               padding: "12px 16px",
               borderBottom: "1px solid rgba(255,255,255,0.02)",
@@ -124,9 +124,9 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
         )}
       </div>
 
-      <Modal 
-        title={<span style={{ color: "white" }}>Add AutoMod Rule</span>} 
-        open={isModalOpen} 
+      <Modal
+        title={<span style={{ color: "white" }}>Add AutoMod Rule</span>}
+        open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         styles={{
@@ -135,7 +135,7 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
           },
-          content: {
+          body: {
             background: "rgba(20, 20, 25, 0.75)",
             border: "1px solid rgba(255, 255, 255, 0.08)",
             borderRadius: 16,
@@ -158,26 +158,36 @@ export function BlockedWordsManager({ rules, onAddRule, onRemoveRule }: BlockedW
           <Form.Item name="pattern" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Pattern/Word</span>} rules={[{ required: true, message: 'Please enter a pattern' }]}>
             <Input placeholder="e.g. *scam* or https://*" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "white" }} />
           </Form.Item>
-          
+
           <Form.Item name="matchType" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Match Type</span>} initialValue="wildcard">
-            <Select dropdownStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <Select.Option value="exact">Exact Match</Select.Option>
-              <Select.Option value="wildcard">Wildcard Contains</Select.Option>
-              <Select.Option value="prefix">Prefix Match</Select.Option>
-              <Select.Option value="suffix">Suffix Match</Select.Option>
-            </Select>
+            <Select
+              options={[
+                { value: "exact", label: "Exact Match" },
+                { value: "wildcard", label: "Wildcard Contains" },
+                { value: "prefix", label: "Prefix Match" },
+                { value: "suffix", label: "Suffix Match" },
+              ]}
+              styles={{
+                popup: {
+                  root: {
+                    background: "#1e1e24",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  },
+                },
+              }}
+            />
           </Form.Item>
 
           <Form.Item name="actions" label={<span style={{ color: "rgba(255,255,255,0.65)" }}>Automated Actions</span>} initialValue={['BLOCK_MESSAGE', 'SEND_ALERT']}>
-            <Select 
-              mode="multiple" 
-              placeholder="Select consequence" 
+            <Select
+              mode="multiple"
+              placeholder="Select consequence"
               dropdownStyle={{ background: "#1e1e24", border: "1px solid rgba(255,255,255,0.1)" }}
               onChange={(value: string[]) => {
                 // Enforce mutual exclusivity
                 if (value.includes('CENSOR_WORD') && value.includes('BLOCK_MESSAGE')) {
                   const lastAdded = value[value.length - 1];
-                  const newValues = value.filter(v => 
+                  const newValues = value.filter(v =>
                     lastAdded === 'CENSOR_WORD' ? v !== 'BLOCK_MESSAGE' : v !== 'CENSOR_WORD'
                   );
                   form.setFieldsValue({ actions: newValues });

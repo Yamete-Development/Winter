@@ -1,5 +1,5 @@
 import { db } from "../db.server";
-import { automodRule, automodPattern, infraction, user } from "../../drizzle/schema";
+import { automodRule, automodPattern, infraction, user, type blockWordAction } from "../../drizzle/schema";
 import { eq, inArray, desc } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AutomodRuleResource, InfractionResource } from "../resources/moderation";
@@ -7,10 +7,10 @@ import type { AutomodRuleResource, InfractionResource } from "../resources/moder
 export const moderationService = {
   async getAutomodRules(hubId: string): Promise<AutomodRuleResource[]> {
     const rules = await db.select().from(automodRule).where(eq(automodRule.hubId, hubId));
-    
+
     const ruleIds = rules.map(r => r.id);
-    
-    const patterns = ruleIds.length > 0 
+
+    const patterns = ruleIds.length > 0
       ? await db.select().from(automodPattern).where(inArray(automodPattern.ruleId, ruleIds))
       : [];
 
@@ -87,7 +87,16 @@ export const moderationService = {
     });
   },
 
-  async batchUpdateAutomodRules(hubId: string, rules: { id?: string, pattern: string, matchType: string, actions: string[] }[], createdBy: string) {
+  async batchUpdateAutomodRules(
+    hubId: string,
+    rules: {
+      id?: string;
+      pattern: string;
+      matchType: string;
+      actions: (typeof blockWordAction.enumValues)[number][];
+    }[],
+    createdBy: string,
+  ) {
     const ruleIdsToKeep = new Set<string>();
 
     for (const rule of rules) {

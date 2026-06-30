@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { blockWordAction } from "../../drizzle/schema";
 
 export const automodRuleItemSchema = z.object({
-  id: z.string().optional(), // optional because new rules won't have an ID yet (or they have a random one that we will ignore/regenerate on server)
+  id: z.string().optional(),
   pattern: z.string().min(1),
   matchType: z.enum(["exact", "wildcard", "prefix", "suffix"]),
-  actions: z.array(z.string()),
+  actions: z.array(z.enum(blockWordAction.enumValues)),
 });
 
 export const batchUpdateAutomodRulesSchema = z.object({

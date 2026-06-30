@@ -122,7 +122,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { user };
 }
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const { user } = loaderData;
