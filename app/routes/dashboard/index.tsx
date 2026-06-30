@@ -459,7 +459,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
   };
 
   const handleNukeMessages = () => {
-    if (!activeConfig.permissions.LOCKDOWN_HUB) return;
+    if (!activeConfig.permissions.MODERATE_MESSAGES) return;
     Modal.confirm({
       title: "Nuke All Messages",
       content: `Are you sure you want to permanently delete ALL messages in "${activeHub.name}"? This action cannot be undone.`,

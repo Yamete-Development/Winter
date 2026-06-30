@@ -231,11 +231,21 @@ export const hubService = {
 
   /**
    * Deletes a hub and all associated data (cascaded by FK constraints).
+   * Validates that only the actual Hub Owner is authorized.
    */
   async deleteHub(userId: string, hubId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const canPerform = await permissionService.canPerform(userId, hubId, "ADMINISTRATOR");
-      if (!canPerform) {
+      const [hubRecord] = await db
+        .select({ ownerId: hub.ownerId })
+        .from(hub)
+        .where(eq(hub.id, hubId))
+        .limit(1);
+
+      if (!hubRecord) {
+        return { success: false, error: "Hub not found." };
+      }
+
+      if (hubRecord.ownerId !== userId) {
         return { success: false, error: "Only the hub owner can delete a hub." };
       }
 
@@ -252,11 +262,21 @@ export const hubService = {
 
   /**
    * Transfers ownership of a hub to another user.
+   * Validates that only the actual Hub Owner is authorized.
    */
   async transferOwnership(userId: string, hubId: string, newOwnerId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const canPerform = await permissionService.canPerform(userId, hubId, "ADMINISTRATOR");
-      if (!canPerform) {
+      const [hubRecord] = await db
+        .select({ ownerId: hub.ownerId })
+        .from(hub)
+        .where(eq(hub.id, hubId))
+        .limit(1);
+
+      if (!hubRecord) {
+        return { success: false, error: "Hub not found." };
+      }
+
+      if (hubRecord.ownerId !== userId) {
         return { success: false, error: "Only the hub owner can transfer ownership." };
       }
 
@@ -281,7 +301,7 @@ export const hubService = {
    */
   async nukeHubMessages(userId: string, hubId: string): Promise<{ success: boolean; error?: string; deletedCount?: number }> {
     try {
-      const canPerform = await permissionService.canPerform(userId, hubId, "LOCKDOWN_HUB");
+      const canPerform = await permissionService.canPerform(userId, hubId, "MODERATE_MESSAGES");
       if (!canPerform) {
         return { success: false, error: "You do not have permission to nuke messages." };
       }

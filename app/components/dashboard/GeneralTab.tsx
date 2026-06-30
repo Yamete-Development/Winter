@@ -157,7 +157,7 @@ export function GeneralTab({
                   Permanently delete all messages in this hub.
                 </Text>
               </div>
-              <Button danger onClick={onNukeMessages} disabled={!activeConfig.permissions.LOCKDOWN_HUB}>
+              <Button danger onClick={onNukeMessages} disabled={!activeConfig.permissions.MODERATE_MESSAGES}>
                 Nuke Messages
               </Button>
             </div>

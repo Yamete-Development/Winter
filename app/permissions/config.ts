@@ -6,13 +6,10 @@ export const PERMISSION_ACTIONS = [
   "MANAGE_RULES",
   "VIEW_ANALYTICS",
   "VIEW_LOGS",
-  "MANAGE_BANS",
   "MANAGE_GLOBAL_BLACKLISTS",
   "HANDLE_LOBBY_REPORTS",
   "DEVELOPER_BYPASS",
   "ADMINISTRATOR",
-  "ANNOUNCE",
-  "LOCKDOWN_HUB",
 ] as const;
 
 export type PermissionAction = typeof PERMISSION_ACTIONS[number];
@@ -32,13 +29,10 @@ export const PERMISSION_BITMASKS: Record<PermissionAction, number> = {
   MANAGE_RULES: 16,              // 1 << 4
   VIEW_ANALYTICS: 32,            // 1 << 5
   VIEW_LOGS: 64,                 // 1 << 6
-  MANAGE_BANS: 128,              // 1 << 7
   MANAGE_GLOBAL_BLACKLISTS: 256, // 1 << 8
   HANDLE_LOBBY_REPORTS: 512,     // 1 << 9
   DEVELOPER_BYPASS: 1024,        // 1 << 10
   ADMINISTRATOR: 2048,           // 1 << 11
-  ANNOUNCE: 4096,                // 1 << 12
-  LOCKDOWN_HUB: 8192,            // 1 << 13
 } as const;
 
 /**
@@ -52,13 +46,10 @@ export const ALL_PERMISSIONS: Record<PermissionAction, boolean> = {
   MANAGE_RULES: true,
   VIEW_ANALYTICS: true,
   VIEW_LOGS: true,
-  MANAGE_BANS: true,
   MANAGE_GLOBAL_BLACKLISTS: true,
   HANDLE_LOBBY_REPORTS: true,
   DEVELOPER_BYPASS: true,
   ADMINISTRATOR: true,
-  ANNOUNCE: true,
-  LOCKDOWN_HUB: true,
 };
 
 /**
@@ -76,13 +67,10 @@ export const ROLE_PERMISSIONS: RolePermissionsConfig = {
     MANAGE_RULES: true,
     VIEW_ANALYTICS: true,
     VIEW_LOGS: true,
-    MANAGE_BANS: true,
     MANAGE_GLOBAL_BLACKLISTS: true,
     HANDLE_LOBBY_REPORTS: true,
     DEVELOPER_BYPASS: true,
     ADMINISTRATOR: true,
-    ANNOUNCE: true,
-    LOCKDOWN_HUB: true,
   },
   MANAGER: {
     MANAGE_HUB_SETTINGS: true,
@@ -92,13 +80,10 @@ export const ROLE_PERMISSIONS: RolePermissionsConfig = {
     MANAGE_RULES: true,
     VIEW_ANALYTICS: true,
     VIEW_LOGS: true,
-    MANAGE_BANS: true,
     MANAGE_GLOBAL_BLACKLISTS: false,
     HANDLE_LOBBY_REPORTS: true,
     DEVELOPER_BYPASS: false,
     ADMINISTRATOR: false,
-    ANNOUNCE: true,
-    LOCKDOWN_HUB: true,
   },
   MODERATOR: {
     MANAGE_HUB_SETTINGS: false,
@@ -108,13 +93,10 @@ export const ROLE_PERMISSIONS: RolePermissionsConfig = {
     MANAGE_RULES: false,
     VIEW_ANALYTICS: false,
     VIEW_LOGS: true,
-    MANAGE_BANS: true,
     MANAGE_GLOBAL_BLACKLISTS: false,
     HANDLE_LOBBY_REPORTS: false,
     DEVELOPER_BYPASS: false,
     ADMINISTRATOR: false,
-    ANNOUNCE: false,
-    LOCKDOWN_HUB: false,
   },
 };
 
