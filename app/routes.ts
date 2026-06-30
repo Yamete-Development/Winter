@@ -18,5 +18,6 @@ export default [
   route("auth/logout", "routes/auth/logout.tsx"),
   route("api/v1/auth/sse", "routes/api/v1/auth.sse.tsx"),
   route("api/beacon/token", "routes/api/beacon/token.tsx"),
+  route("api/webhooks/topgg", "routes/api/webhooks/topgg.tsx"),
   route("api/v1/*", "routes/api/v1/$.tsx")
 ] satisfies RouteConfig;
