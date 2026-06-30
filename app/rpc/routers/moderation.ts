@@ -3,7 +3,7 @@ import { base, protectedBase } from "../context";
 import { moderationService } from "../../services/moderation.server";
 import { hubStaffService } from "../../services/hubStaff.server";
 import { z } from "zod";
-import { batchUpdateAutomodRulesSchema } from "../../schemas/moderation";
+import { batchUpdateAutomodRulesSchema, createAutomodRuleSchema, updateAutomodRuleSchema, deleteAutomodRuleSchema } from "../../schemas/moderation";
 
 const hubRoleSchema = z.enum(["MANAGER", "MODERATOR"]);
 
@@ -12,6 +12,12 @@ export const moderationRouter = base.router({
     .input(z.object({ hubId: z.string() }))
     .handler(async ({ input, context }) => {
       return moderationService.getAutomodRules(input.hubId, context.user.id);
+    }),
+
+  getAutomodRule: protectedBase
+    .input(z.object({ hubId: z.string(), ruleId: z.string() }))
+    .handler(async ({ input, context }) => {
+      return moderationService.getAutomodRule(input.hubId, input.ruleId, context.user.id);
     }),
 
   getRecentInfractions: protectedBase
@@ -24,6 +30,25 @@ export const moderationRouter = base.router({
     .input(batchUpdateAutomodRulesSchema)
     .handler(async ({ input, context }) => {
       return moderationService.batchUpdateAutomodRules(input.hubId, input.rules, context.user.id);
+    }),
+
+  createAutomodRule: protectedBase
+    .input(createAutomodRuleSchema)
+    .handler(async ({ input, context }) => {
+      return moderationService.createAutomodRule(input.hubId, input, context.user.id);
+    }),
+
+  updateAutomodRule: protectedBase
+    .input(updateAutomodRuleSchema)
+    .handler(async ({ input, context }) => {
+      const { hubId, ruleId, ...rest } = input;
+      return moderationService.updateAutomodRule(hubId, ruleId, rest, context.user.id);
+    }),
+
+  deleteAutomodRule: protectedBase
+    .input(deleteAutomodRuleSchema)
+    .handler(async ({ input, context }) => {
+      return moderationService.deleteAutomodRule(input.hubId, input.ruleId, context.user.id);
     }),
 
   // ------------------------------------------------------------------ //

@@ -1,4 +1,3 @@
-import type { AutomodRule } from "../BlockedWordsManager";
 import type { PermissionAction } from "../../permissions/config";
 
 export type DashboardBackgroundSearchResult = {
@@ -44,7 +43,6 @@ export type DashboardHubConfig = {
   locked: boolean;
   profanityFilter: boolean;
   appealCooldown: number;
-  automodRules: AutomodRule[];
   welcomeMessage: string;
   connections: DashboardConnection[];
   chatLogs: DashboardChatLog[];

@@ -6,7 +6,6 @@ import { orpc } from "../../lib/orpc";
 import { getDefaultPermissions } from "../../permissions/config";
 import { useQuery, useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { HubSettingsFlags } from "../../schemas/hub";
-import type { AutomodRule } from "../../components/BlockedWordsManager";
 import { CreateHubWizard } from "../../components/CreateHubWizard";
 import { EmptyDashboardState } from "../../components/dashboard/EmptyDashboardState";
 import { GeneralTab } from "../../components/dashboard/GeneralTab";
@@ -229,12 +228,6 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
       profanityFilter: rulesData ? rulesData.length > 0 : false,
       appealCooldown: activeHubFull?.spec.appealCooldownHours || 168,
       welcomeMessage: activeHubFull?.spec.welcomeMessage || "",
-      automodRules: rulesData ? rulesData.map(r => ({
-        id: r.metadata.id,
-        pattern: r.spec.patterns[0]?.pattern || r.spec.name,
-        matchType: (r.spec.patterns[0]?.matchType?.toLowerCase() as any) || "wildcard",
-        actions: r.spec.actions
-      })) : [],
       connections: connectionsData ? connectionsData.map(c => ({
         id: c.metadata.id,
         name: c.status.serverName,
@@ -311,8 +304,6 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
     });
   };
 
-  const { mutateAsync: batchUpdateAutomodRules } = useMutation(orpc.moderation.batchUpdateAutomodRules.mutationOptions());
-
   const handleSaveChanges = async () => {
     if (!isDirty) return;
     try {
@@ -327,12 +318,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
         });
       }
 
-      if (draftConfig.automodRules !== undefined) {
-        await batchUpdateAutomodRules({
-          hubId: selectedHubId,
-          rules: draftConfig.automodRules,
-        });
-      }
+
 
       message.success("Changes saved successfully!");
       setDraftConfig({});
@@ -478,19 +464,7 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
     });
   };
 
-  const handleAddAutomodRule = (rule: AutomodRule) => {
-    setDraftConfig(prev => {
-      const currentRules = prev.automodRules || serverConfig.automodRules || [];
-      return { ...prev, automodRules: [...currentRules, rule] };
-    });
-  };
 
-  const handleRemoveAutomodRule = (id: string) => {
-    setDraftConfig(prev => {
-      const currentRules = prev.automodRules || serverConfig.automodRules || [];
-      return { ...prev, automodRules: currentRules.filter((r: AutomodRule) => r.id !== id) };
-    });
-  };
   const handleSendChat = async () => {
     if (!chatInput.trim() || !selectedHubId) return;
     try {
@@ -544,8 +518,6 @@ export default function DashboardIndex({ }: Route.ComponentProps) {
                     onSendChat={handleSendChat}
                     onToggleConfig={handleToggleConfig}
                     onAppealCooldownChange={(v) => handleNumberConfigChange('appealCooldown', v)}
-                    onAddAutomodRule={handleAddAutomodRule}
-                    onRemoveAutomodRule={handleRemoveAutomodRule}
                     fetchNextPage={fetchNextPage}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}

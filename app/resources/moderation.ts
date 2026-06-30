@@ -10,17 +10,27 @@ export type AutomodPattern = {
   matchType: "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD";
 };
 
+export type AutomodWhitelistItem = {
+  id: string;
+  word: string;
+};
+
 export type AutomodRuleSpec = {
   name: string;
   enabled: boolean;
   muteDurationMinutes: number | null;
   actions: string[]; // E.g., 'BLOCK_MESSAGE', 'WARN', etc.
   patterns: AutomodPattern[];
+  whitelist: AutomodWhitelistItem[];
 };
 
 export type AutomodRuleResource = {
   metadata: BaseResourceMetadata;
   spec: AutomodRuleSpec;
+  status?: {
+    patternCount: number;
+    whitelistCount: number;
+  };
 };
 
 export type InfractionSpec = {

@@ -2,8 +2,7 @@ import { useEffect, useRef, useMemo, useLayoutEffect, useState } from "react";
 import { CrownFilled, PlusOutlined, SafetyCertificateFilled, LoadingOutlined } from "@ant-design/icons";
 import { Avatar, Badge, Button, Divider, Dropdown, Input, Space, Switch, Tag, Typography, message, Spin, Segmented, Skeleton } from "antd";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
-import type { AutomodRule } from "../BlockedWordsManager";
-import { BlockedWordsManager } from "../BlockedWordsManager";
+import { AutomodPane } from "./automod/AutomodPane";
 import { GridItemWrapper, GridTabContent } from "./GridTabContent";
 import { DashboardSectionCard, DashboardSectionTitle } from "./shared";
 import type { DashboardHub, DashboardHubConfig, DashboardTabKey } from "./types";
@@ -40,8 +39,6 @@ type ModerationTabProps = {
   onSendChat: () => void;
   onToggleConfig: (field: "nsfw" | "locked") => void;
   onAppealCooldownChange: (value: number) => void;
-  onAddAutomodRule: (rule: AutomodRule) => void;
-  onRemoveAutomodRule: (id: string) => void;
   fetchNextPage: () => void;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
@@ -59,8 +56,6 @@ export function ModerationTab({
   onSendChat,
   onToggleConfig,
   onAppealCooldownChange,
-  onAddAutomodRule,
-  onRemoveAutomodRule,
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
@@ -231,9 +226,12 @@ export function ModerationTab({
         </GridItemWrapper>
 
         <GridItemWrapper key="blockedWords">
-          <DashboardSectionCard title={<DashboardSectionTitle>Automod: Blocked Words</DashboardSectionTitle>}>
-            <div style={!activeConfig.permissions.MANAGE_RULES ? { pointerEvents: "none", opacity: 0.6 } : {}}>
-              <BlockedWordsManager rules={activeConfig.automodRules} onAddRule={onAddAutomodRule} onRemoveRule={onRemoveAutomodRule} />
+          <DashboardSectionCard 
+            title={<DashboardSectionTitle>Automod: Blocked Words</DashboardSectionTitle>}
+            styles={{ body: { padding: "12px 16px", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 } }}
+          >
+            <div style={!activeConfig.permissions.MANAGE_RULES ? { pointerEvents: "none", opacity: 0.6, height: "100%", display: "flex", flexDirection: "column" } : { height: "100%", display: "flex", flexDirection: "column" }}>
+              <AutomodPane hubId={activeHub.id} canManageRules={activeConfig.permissions.MANAGE_RULES} />
             </div>
           </DashboardSectionCard>
         </GridItemWrapper>

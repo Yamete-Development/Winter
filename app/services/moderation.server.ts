@@ -1,6 +1,6 @@
 import { db } from "../db.server";
-import { automodRule, automodPattern, infraction, user, type blockWordAction } from "../../drizzle/schema";
-import { eq, inArray, desc } from "drizzle-orm";
+import { automodRule, automodPattern, automodWhitelist, infraction, user, type blockWordAction } from "../../drizzle/schema";
+import { eq, inArray, desc, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AutomodRuleResource, InfractionResource } from "../resources/moderation";
 import { permissionService } from "./permission.server";
@@ -12,9 +12,30 @@ export const moderationService = {
 
     const ruleIds = rules.map(r => r.id);
 
-    const patterns = ruleIds.length > 0
-      ? await db.select().from(automodPattern).where(inArray(automodPattern.ruleId, ruleIds))
+    const patternCounts = ruleIds.length > 0
+      ? await db
+          .select({
+            ruleId: automodPattern.ruleId,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(automodPattern)
+          .where(inArray(automodPattern.ruleId, ruleIds))
+          .groupBy(automodPattern.ruleId)
       : [];
+
+    const whitelistCounts = ruleIds.length > 0
+      ? await db
+          .select({
+            ruleId: automodWhitelist.ruleId,
+            count: sql<number>`count(*)::int`,
+          })
+          .from(automodWhitelist)
+          .where(inArray(automodWhitelist.ruleId, ruleIds))
+          .groupBy(automodWhitelist.ruleId)
+      : [];
+
+    const patternCountMap = new Map(patternCounts.map(pc => [pc.ruleId, pc.count]));
+    const whitelistCountMap = new Map(whitelistCounts.map(wc => [wc.ruleId, wc.count]));
 
     return rules.map(rule => ({
       metadata: {
@@ -28,13 +49,53 @@ export const moderationService = {
         enabled: rule.enabled,
         muteDurationMinutes: rule.muteDurationMinutes,
         actions: rule.actions as string[],
-        patterns: patterns.filter(p => p.ruleId === rule.id).map(p => ({
-          id: p.id,
-          pattern: p.pattern,
-          matchType: p.matchType,
-        })),
+        patterns: [],
+        whitelist: [],
+      },
+      status: {
+        patternCount: patternCountMap.get(rule.id) || 0,
+        whitelistCount: whitelistCountMap.get(rule.id) || 0,
       }
     }));
+  },
+
+  async getAutomodRule(hubId: string, ruleId: string, userId: string): Promise<AutomodRuleResource> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_RULES");
+    const rule = await db.select().from(automodRule).where(eq(automodRule.id, ruleId)).then(rows => rows[0]);
+    if (!rule || rule.hubId !== hubId) {
+      throw new Error("Rule not found");
+    }
+
+    const patterns = await db.select().from(automodPattern).where(eq(automodPattern.ruleId, ruleId));
+    const whitelists = await db.select().from(automodWhitelist).where(eq(automodWhitelist.ruleId, ruleId));
+
+    return {
+      metadata: {
+        id: rule.id,
+        name: rule.name,
+        createdAt: rule.createdAt,
+        updatedAt: rule.updatedAt,
+      },
+      spec: {
+        name: rule.name,
+        enabled: rule.enabled,
+        muteDurationMinutes: rule.muteDurationMinutes,
+        actions: rule.actions as string[],
+        patterns: patterns.map(p => ({
+          id: p.id,
+          pattern: p.pattern,
+          matchType: p.matchType as "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD",
+        })),
+        whitelist: whitelists.map(w => ({
+          id: w.id,
+          word: w.word,
+        })),
+      },
+      status: {
+        patternCount: patterns.length,
+        whitelistCount: whitelists.length,
+      }
+    };
   },
 
   async getRecentInfractions(hubId: string, userId: string, limitCount: number = 20): Promise<InfractionResource[]> {
@@ -164,5 +225,123 @@ export const moderationService = {
     }
 
     return true;
+  },
+
+  async createAutomodRule(
+    hubId: string,
+    input: {
+      name: string;
+      actions: (typeof blockWordAction.enumValues)[number][];
+      muteDurationMinutes?: number | null;
+      patterns: { pattern: string; matchType: "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD" }[];
+      whitelist: string[];
+    },
+    userId: string
+  ): Promise<{ id: string }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_RULES");
+    const ruleId = crypto.randomUUID();
+
+    await db.insert(automodRule).values({
+      id: ruleId,
+      hubId,
+      name: input.name,
+      createdBy: userId,
+      enabled: true,
+      muteDurationMinutes: input.muteDurationMinutes || null,
+      actions: input.actions,
+    });
+
+    if (input.patterns.length > 0) {
+      await db.insert(automodPattern).values(
+        input.patterns.map(p => ({
+          id: crypto.randomUUID(),
+          ruleId,
+          pattern: p.pattern,
+          matchType: p.matchType,
+        }))
+      );
+    }
+
+    if (input.whitelist.length > 0) {
+      await db.insert(automodWhitelist).values(
+        input.whitelist.map(w => ({
+          id: crypto.randomUUID(),
+          ruleId,
+          word: w,
+          createdBy: userId,
+        }))
+      );
+    }
+
+    return { id: ruleId };
+  },
+
+  async updateAutomodRule(
+    hubId: string,
+    ruleId: string,
+    input: {
+      name?: string;
+      enabled?: boolean;
+      actions?: (typeof blockWordAction.enumValues)[number][];
+      muteDurationMinutes?: number | null;
+      patterns?: { pattern: string; matchType: "EXACT" | "PREFIX" | "SUFFIX" | "WILDCARD" }[];
+      whitelist?: string[];
+    },
+    userId: string
+  ): Promise<{ success: boolean }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_RULES");
+
+    const updateData: any = {};
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.enabled !== undefined) updateData.enabled = input.enabled;
+    if (input.muteDurationMinutes !== undefined) updateData.muteDurationMinutes = input.muteDurationMinutes || null;
+    if (input.actions !== undefined) updateData.actions = input.actions;
+
+    if (Object.keys(updateData).length > 0) {
+      updateData.updatedAt = new Date().toISOString();
+      await db.update(automodRule)
+        .set(updateData)
+        .where(eq(automodRule.id, ruleId));
+    }
+
+    if (input.patterns !== undefined) {
+      await db.delete(automodPattern).where(eq(automodPattern.ruleId, ruleId));
+      if (input.patterns.length > 0) {
+        await db.insert(automodPattern).values(
+          input.patterns.map(p => ({
+            id: crypto.randomUUID(),
+            ruleId,
+            pattern: p.pattern,
+            matchType: p.matchType,
+          }))
+        );
+      }
+    }
+
+    if (input.whitelist !== undefined) {
+      await db.delete(automodWhitelist).where(eq(automodWhitelist.ruleId, ruleId));
+      if (input.whitelist.length > 0) {
+        await db.insert(automodWhitelist).values(
+          input.whitelist.map(w => ({
+            id: crypto.randomUUID(),
+            ruleId,
+            word: w,
+            createdBy: userId,
+          }))
+        );
+      }
+    }
+
+    return { success: true };
+  },
+
+  async deleteAutomodRule(
+    hubId: string,
+    ruleId: string,
+    userId: string
+  ): Promise<{ success: boolean }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_RULES");
+    await db.delete(automodRule).where(eq(automodRule.id, ruleId));
+    return { success: true };
   }
 };

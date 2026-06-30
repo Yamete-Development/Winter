@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/layout";
 import { requireUser } from "../../services/auth.server";
 import { Layout, Menu, ConfigProvider, theme } from "antd";
-import { AppstoreOutlined, SettingOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, SettingOutlined, SafetyOutlined } from "@ant-design/icons";
 import { orpc } from "../../lib/orpc";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
@@ -191,7 +191,7 @@ export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
     {
       key: "/dashboard",
       icon: <AppstoreOutlined />,
-      label: <Link to="/dashboard">My Servers</Link>,
+      label: <Link to="/dashboard">My Hubs</Link>,
     },
     {
       key: "/dashboard/settings",

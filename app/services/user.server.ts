@@ -1,28 +1,22 @@
 import { db } from "../db.server";
 import { user } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { redis } from "../redis.server";
 
 export const userService = {
   async getDashboardPreference(userId: string): Promise<Record<string, any> | null> {
-    const result = await db
-      .select({ dashboardPreference: user.dashboardPreference })
-      .from(user)
-      .where(eq(user.id, userId))
-      .limit(1);
-
-    if (result.length === 0) return null;
-    return result[0].dashboardPreference as Record<string, any> | null;
+    try {
+      const val = await redis.get(`user:dashboard_preference:${userId}`);
+      if (val) return JSON.parse(val);
+    } catch (err) {
+      console.warn("Failed to get dashboard preference from redis", err);
+    }
+    return null;
   },
 
   async updateDashboardPreference(userId: string, preference: Record<string, any>): Promise<{ success: boolean }> {
     try {
-      await db
-        .update(user)
-        .set({
-          dashboardPreference: preference,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(user.id, userId));
+      await redis.set(`user:dashboard_preference:${userId}`, JSON.stringify(preference));
       return { success: true };
     } catch (error) {
       console.error("Failed to update dashboard preference", error);
@@ -45,20 +39,28 @@ export const userService = {
         showNsfwHubs: user.showNsfwHubs,
         voteRemindersEnabled: user.voteRemindersEnabled,
         showBadges: user.showBadges,
-        dashboardPreference: user.dashboardPreference,
       })
       .from(user)
       .where(eq(user.id, userId))
       .limit(1);
 
     if (result.length === 0) return null;
+
+    let dashboardPreference: Record<string, any> | null = null;
+    try {
+      const val = await redis.get(`user:dashboard_preference:${userId}`);
+      if (val) dashboardPreference = JSON.parse(val);
+    } catch (err) {
+      console.warn("Failed to get dashboard preference from redis in getUserPreferences", err);
+    }
+
     return {
       locale: result[0].locale,
       mentionOnReply: result[0].mentionOnReply,
       showNsfwHubs: result[0].showNsfwHubs,
       voteRemindersEnabled: result[0].voteRemindersEnabled,
       showBadges: result[0].showBadges,
-      dashboardPreference: result[0].dashboardPreference as Record<string, any> | null,
+      dashboardPreference,
     };
   },
 
@@ -74,18 +76,21 @@ export const userService = {
     }
   ): Promise<{ success: boolean }> {
     try {
-      const updates: any = {};
-      if (input.locale !== undefined) updates.locale = input.locale;
-      if (input.mentionOnReply !== undefined) updates.mentionOnReply = input.mentionOnReply;
-      if (input.showNsfwHubs !== undefined) updates.showNsfwHubs = input.showNsfwHubs;
-      if (input.voteRemindersEnabled !== undefined) updates.voteRemindersEnabled = input.voteRemindersEnabled;
-      if (input.showBadges !== undefined) updates.showBadges = input.showBadges;
-      if (input.dashboardPreference !== undefined) updates.dashboardPreference = input.dashboardPreference;
+      const dbUpdates: any = {};
+      if (input.locale !== undefined) dbUpdates.locale = input.locale;
+      if (input.mentionOnReply !== undefined) dbUpdates.mentionOnReply = input.mentionOnReply;
+      if (input.showNsfwHubs !== undefined) dbUpdates.showNsfwHubs = input.showNsfwHubs;
+      if (input.voteRemindersEnabled !== undefined) dbUpdates.voteRemindersEnabled = input.voteRemindersEnabled;
+      if (input.showBadges !== undefined) dbUpdates.showBadges = input.showBadges;
 
-      if (Object.keys(updates).length === 0) return { success: true };
+      if (input.dashboardPreference !== undefined) {
+        await redis.set(`user:dashboard_preference:${userId}`, JSON.stringify(input.dashboardPreference));
+      }
 
-      updates.updatedAt = new Date().toISOString();
-      await db.update(user).set(updates).where(eq(user.id, userId));
+      if (Object.keys(dbUpdates).length === 0) return { success: true };
+
+      dbUpdates.updatedAt = new Date().toISOString();
+      await db.update(user).set(dbUpdates).where(eq(user.id, userId));
       return { success: true };
     } catch (error) {
       console.error("Failed to update user preferences", error);
