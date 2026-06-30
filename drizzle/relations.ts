@@ -1,64 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { hub, connection, serverData, message, broadcast, user, blockWord, autoModEscalationRule, automodRule, nsfwOverride, nsfwReviewQueue, automodPattern, automodWhitelist, appeal, infraction, lobby, lobbyParticipant, lobbyConnection, blacklist, hubReport, lobbyReport, hubActivityMetrics, globalReport, hubInvite, hubAnnouncement, hubLogConfig, hubMessageReaction, hubModerator, hubReview, hubRulesAcceptance, hubUpvote, serverBlacklist, reputationLog, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, userAchievementProgress } from "./schema";
-
-export const connectionRelations = relations(connection, ({one}) => ({
-	hub: one(hub, {
-		fields: [connection.hubId],
-		references: [hub.id]
-	}),
-	serverDatum: one(serverData, {
-		fields: [connection.serverId],
-		references: [serverData.id]
-	}),
-}));
-
-export const hubRelations = relations(hub, ({one, many}) => ({
-	connections: many(connection),
-	messages: many(message),
-	blockWords: many(blockWord),
-	autoModEscalationRules: many(autoModEscalationRule),
-	automodRules: many(automodRule),
-	nsfwOverrides: many(nsfwOverride),
-	nsfwReviewQueues: many(nsfwReviewQueue),
-	user: one(user, {
-		fields: [hub.ownerId],
-		references: [user.id]
-	}),
-	infractions: many(infraction),
-	hubActivityMetrics: many(hubActivityMetrics),
-	hubInvites: many(hubInvite),
-	hubAnnouncements: many(hubAnnouncement),
-	hubLogConfigs: many(hubLogConfig),
-	hubModerators: many(hubModerator),
-	hubReports: many(hubReport),
-	hubReviews: many(hubReview),
-	hubRulesAcceptances: many(hubRulesAcceptance),
-	hubUpvotes: many(hubUpvote),
-	hubToTags: many(hubToTag),
-	allowedBots: many(allowedBots),
-	hubServerStats: many(hubServerStats),
-	hubUserStats: many(hubUserStats),
-	premiumKeys: many(premiumKey),
-}));
-
-export const serverDataRelations = relations(serverData, ({many}) => ({
-	connections: many(connection),
-	blockWords: many(blockWord),
-	autoModEscalationRules: many(autoModEscalationRule),
-	automodRules: many(automodRule),
-	infractions: many(infraction),
-	serverBlacklists: many(serverBlacklist),
-	serverBlocklists_blockedServerId: many(serverBlocklist, {
-		relationName: "serverBlocklist_blockedServerId_serverData_id"
-	}),
-	serverBlocklists_serverId: many(serverBlocklist, {
-		relationName: "serverBlocklist_serverId_serverData_id"
-	}),
-	hubServerStats: many(hubServerStats),
-	premiumKeys: many(premiumKey),
-	lobbyConnections: many(lobbyConnection),
-	betaServers: many(betaServer),
-}));
+import { message, broadcast, hub, user, blockWord, serverData, infraction, appeal, hubReport, blacklist, lobbyReport, hubActivityMetrics, connection, globalReport, hubInvite, hubAnnouncement, hubMessageReaction, hubReview, hubLogConfig, hubRulesAcceptance, hubUpvote, reputationLog, serverBlacklist, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyConnection, lobby, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, autoModEscalationRule, nsfwOverride, nsfwReviewQueue, lobbyParticipant, automodRule, automodPattern, automodWhitelist, authRole, authUserAssignment, auditLog, userSafetyScore, safetySignal, safetyFlag, bannedUserAlias, moderatedContentHash, serverSafetyScore, serverSafetySignal, serverSafetyFlag, serverAutomodRuleState, userAchievementProgress } from "./schema";
 
 export const broadcastRelations = relations(broadcast, ({one}) => ({
 	message: one(message, {
@@ -82,8 +23,42 @@ export const messageRelations = relations(message, ({one, many}) => ({
 		relationName: "message_referredMessageId_message_id"
 	}),
 	globalReports: many(globalReport),
-	hubMessageReactions: many(hubMessageReaction),
 	hubReports: many(hubReport),
+	hubMessageReactions: many(hubMessageReaction),
+}));
+
+export const hubRelations = relations(hub, ({one, many}) => ({
+	messages: many(message),
+	blockWords: many(blockWord),
+	user: one(user, {
+		fields: [hub.ownerId],
+		references: [user.id]
+	}),
+	infractions: many(infraction),
+	hubActivityMetrics: many(hubActivityMetrics),
+	connections: many(connection),
+	hubInvites: many(hubInvite),
+	hubAnnouncements: many(hubAnnouncement),
+	hubReports: many(hubReport),
+	hubReviews: many(hubReview),
+	hubLogConfigs: many(hubLogConfig),
+	hubRulesAcceptances: many(hubRulesAcceptance),
+	hubUpvotes: many(hubUpvote),
+	hubToTags: many(hubToTag),
+	allowedBots: many(allowedBots),
+	hubServerStats: many(hubServerStats),
+	hubUserStats: many(hubUserStats),
+	premiumKeys: many(premiumKey),
+	autoModEscalationRules: many(autoModEscalationRule),
+	nsfwOverrides: many(nsfwOverride),
+	nsfwReviewQueues: many(nsfwReviewQueue),
+	automodRules: many(automodRule),
+	authRoles: many(authRole),
+	auditLogs: many(auditLog),
+	safetySignals: many(safetySignal),
+	safetyFlags: many(safetyFlag),
+	serverSafetySignals: many(serverSafetySignal),
+	serverSafetyFlags: many(serverSafetyFlag),
 }));
 
 export const blockWordRelations = relations(blockWord, ({one}) => ({
@@ -103,19 +78,8 @@ export const blockWordRelations = relations(blockWord, ({one}) => ({
 
 export const userRelations = relations(user, ({many}) => ({
 	blockWords: many(blockWord),
-	autoModEscalationRules: many(autoModEscalationRule),
-	automodRules: many(automodRule),
-	nsfwOverrides: many(nsfwOverride),
-	nsfwReviewQueues_authorId: many(nsfwReviewQueue, {
-		relationName: "nsfwReviewQueue_authorId_user_id"
-	}),
-	nsfwReviewQueues_handledById: many(nsfwReviewQueue, {
-		relationName: "nsfwReviewQueue_handledById_user_id"
-	}),
 	hubs: many(hub),
-	automodWhitelists: many(automodWhitelist),
 	appeals: many(appeal),
-	lobbyParticipants: many(lobbyParticipant),
 	infractions_moderatorId: many(infraction, {
 		relationName: "infraction_moderatorId_user_id"
 	}),
@@ -137,7 +101,6 @@ export const userRelations = relations(user, ({many}) => ({
 	globalReports_reporterId: many(globalReport, {
 		relationName: "globalReport_reporterId_user_id"
 	}),
-	hubModerators: many(hubModerator),
 	hubReports_handledBy: many(hubReport, {
 		relationName: "hubReport_handledBy_user_id"
 	}),
@@ -150,8 +113,8 @@ export const userRelations = relations(user, ({many}) => ({
 	hubReviews: many(hubReview),
 	hubRulesAcceptances: many(hubRulesAcceptance),
 	hubUpvotes: many(hubUpvote),
-	serverBlacklists: many(serverBlacklist),
 	reputationLogs: many(reputationLog),
+	serverBlacklists: many(serverBlacklist),
 	serverBlocklists: many(serverBlocklist),
 	userAchievements: many(userAchievement),
 	sessions: many(session),
@@ -191,100 +154,78 @@ export const userRelations = relations(user, ({many}) => ({
 	lobbyReportActionLogs_targetUserId: many(lobbyReportActionLog, {
 		relationName: "lobbyReportActionLog_targetUserId_user_id"
 	}),
+	autoModEscalationRules: many(autoModEscalationRule),
+	nsfwOverrides: many(nsfwOverride),
+	nsfwReviewQueues_authorId: many(nsfwReviewQueue, {
+		relationName: "nsfwReviewQueue_authorId_user_id"
+	}),
+	nsfwReviewQueues_handledById: many(nsfwReviewQueue, {
+		relationName: "nsfwReviewQueue_handledById_user_id"
+	}),
+	lobbyParticipants: many(lobbyParticipant),
+	automodRules: many(automodRule),
+	automodWhitelists: many(automodWhitelist),
+	authUserAssignments: many(authUserAssignment),
+	auditLogs_actorId: many(auditLog, {
+		relationName: "auditLog_actorId_user_id"
+	}),
+	auditLogs_userId: many(auditLog, {
+		relationName: "auditLog_userId_user_id"
+	}),
+	userSafetyScores: many(userSafetyScore),
+	safetySignals: many(safetySignal),
+	safetyFlags_acknowledgedBy: many(safetyFlag, {
+		relationName: "safetyFlag_acknowledgedBy_user_id"
+	}),
+	safetyFlags_userId: many(safetyFlag, {
+		relationName: "safetyFlag_userId_user_id"
+	}),
+	bannedUserAliases: many(bannedUserAlias),
+	serverSafetyFlags: many(serverSafetyFlag),
 	userAchievementProgresses: many(userAchievementProgress),
 }));
 
-export const autoModEscalationRuleRelations = relations(autoModEscalationRule, ({one}) => ({
-	user: one(user, {
-		fields: [autoModEscalationRule.createdBy],
-		references: [user.id]
+export const serverDataRelations = relations(serverData, ({many}) => ({
+	blockWords: many(blockWord),
+	infractions: many(infraction),
+	connections: many(connection),
+	serverBlacklists: many(serverBlacklist),
+	serverBlocklists_blockedServerId: many(serverBlocklist, {
+		relationName: "serverBlocklist_blockedServerId_serverData_id"
 	}),
-	hub: one(hub, {
-		fields: [autoModEscalationRule.hubId],
-		references: [hub.id]
+	serverBlocklists_serverId: many(serverBlocklist, {
+		relationName: "serverBlocklist_serverId_serverData_id"
 	}),
-	serverDatum: one(serverData, {
-		fields: [autoModEscalationRule.serverId],
-		references: [serverData.id]
-	}),
-}));
-
-export const automodRuleRelations = relations(automodRule, ({one, many}) => ({
-	user: one(user, {
-		fields: [automodRule.createdBy],
-		references: [user.id]
-	}),
-	hub: one(hub, {
-		fields: [automodRule.hubId],
-		references: [hub.id]
-	}),
-	serverDatum: one(serverData, {
-		fields: [automodRule.serverId],
-		references: [serverData.id]
-	}),
-	automodPatterns: many(automodPattern),
-	automodWhitelists: many(automodWhitelist),
-}));
-
-export const nsfwOverrideRelations = relations(nsfwOverride, ({one}) => ({
-	user: one(user, {
-		fields: [nsfwOverride.createdById],
-		references: [user.id]
-	}),
-	hub: one(hub, {
-		fields: [nsfwOverride.hubId],
-		references: [hub.id]
-	}),
-}));
-
-export const nsfwReviewQueueRelations = relations(nsfwReviewQueue, ({one}) => ({
-	user_authorId: one(user, {
-		fields: [nsfwReviewQueue.authorId],
-		references: [user.id],
-		relationName: "nsfwReviewQueue_authorId_user_id"
-	}),
-	user_handledById: one(user, {
-		fields: [nsfwReviewQueue.handledById],
-		references: [user.id],
-		relationName: "nsfwReviewQueue_handledById_user_id"
-	}),
-	hub: one(hub, {
-		fields: [nsfwReviewQueue.hubId],
-		references: [hub.id]
-	}),
-}));
-
-export const automodPatternRelations = relations(automodPattern, ({one}) => ({
-	automodRule: one(automodRule, {
-		fields: [automodPattern.ruleId],
-		references: [automodRule.id]
-	}),
-}));
-
-export const automodWhitelistRelations = relations(automodWhitelist, ({one}) => ({
-	user: one(user, {
-		fields: [automodWhitelist.createdBy],
-		references: [user.id]
-	}),
-	automodRule: one(automodRule, {
-		fields: [automodWhitelist.ruleId],
-		references: [automodRule.id]
-	}),
+	hubServerStats: many(hubServerStats),
+	premiumKeys: many(premiumKey),
+	lobbyConnections: many(lobbyConnection),
+	betaServers: many(betaServer),
+	autoModEscalationRules: many(autoModEscalationRule),
+	automodRules: many(automodRule),
+	auditLogs: many(auditLog),
+	serverSafetyScores: many(serverSafetyScore),
+	serverSafetySignals: many(serverSafetySignal),
+	serverSafetyFlags: many(serverSafetyFlag),
+	serverAutomodRuleStates: many(serverAutomodRuleState),
 }));
 
 export const appealRelations = relations(appeal, ({one}) => ({
-	user: one(user, {
-		fields: [appeal.userId],
-		references: [user.id]
-	}),
 	infraction: one(infraction, {
 		fields: [appeal.infractionId],
 		references: [infraction.id]
+	}),
+	user: one(user, {
+		fields: [appeal.userId],
+		references: [user.id]
 	}),
 }));
 
 export const infractionRelations = relations(infraction, ({one, many}) => ({
 	appeals: many(appeal),
+	hub: one(hub, {
+		fields: [infraction.hubId],
+		references: [hub.id]
+	}),
 	user_moderatorId: one(user, {
 		fields: [infraction.moderatorId],
 		references: [user.id],
@@ -299,53 +240,18 @@ export const infractionRelations = relations(infraction, ({one, many}) => ({
 		references: [user.id],
 		relationName: "infraction_userId_user_id"
 	}),
-	hub: one(hub, {
-		fields: [infraction.hubId],
-		references: [hub.id]
-	}),
-}));
-
-export const lobbyParticipantRelations = relations(lobbyParticipant, ({one}) => ({
-	lobby: one(lobby, {
-		fields: [lobbyParticipant.lobbyId],
-		references: [lobby.id]
-	}),
-	lobbyConnection: one(lobbyConnection, {
-		fields: [lobbyParticipant.sourceConnectionId],
-		references: [lobbyConnection.id]
-	}),
-	user: one(user, {
-		fields: [lobbyParticipant.userId],
-		references: [user.id]
-	}),
-}));
-
-export const lobbyRelations = relations(lobby, ({many}) => ({
-	lobbyParticipants: many(lobbyParticipant),
-	lobbyConnections: many(lobbyConnection),
-	lobbyMessages: many(lobbyMessage),
-	lobbyReports: many(lobbyReport),
-}));
-
-export const lobbyConnectionRelations = relations(lobbyConnection, ({one, many}) => ({
-	lobbyParticipants: many(lobbyParticipant),
-	serverDatum: one(serverData, {
-		fields: [lobbyConnection.invokerServerId],
-		references: [serverData.id]
-	}),
-	user: one(user, {
-		fields: [lobbyConnection.invokerUserId],
-		references: [user.id]
-	}),
-	lobby: one(lobby, {
-		fields: [lobbyConnection.lobbyId],
-		references: [lobby.id]
-	}),
-	lobbyMessages: many(lobbyMessage),
-	lobbyMessageDeliveries: many(lobbyMessageDelivery),
+	moderatedContentHashes: many(moderatedContentHash),
 }));
 
 export const blacklistRelations = relations(blacklist, ({one}) => ({
+	hubReport: one(hubReport, {
+		fields: [blacklist.hubReportId],
+		references: [hubReport.id]
+	}),
+	lobbyReport: one(lobbyReport, {
+		fields: [blacklist.lobbyReportId],
+		references: [lobbyReport.id]
+	}),
 	user_moderatorId: one(user, {
 		fields: [blacklist.moderatorId],
 		references: [user.id],
@@ -355,14 +261,6 @@ export const blacklistRelations = relations(blacklist, ({one}) => ({
 		fields: [blacklist.userId],
 		references: [user.id],
 		relationName: "blacklist_userId_user_id"
-	}),
-	hubReport: one(hubReport, {
-		fields: [blacklist.hubReportId],
-		references: [hubReport.id]
-	}),
-	lobbyReport: one(lobbyReport, {
-		fields: [blacklist.lobbyReportId],
-		references: [lobbyReport.id]
 	}),
 }));
 
@@ -392,6 +290,7 @@ export const hubReportRelations = relations(hubReport, ({one, many}) => ({
 		relationName: "hubReport_reporterId_user_id"
 	}),
 	serverBlacklists: many(serverBlacklist),
+	moderatedContentHashes: many(moderatedContentHash),
 }));
 
 export const lobbyReportRelations = relations(lobbyReport, ({one, many}) => ({
@@ -402,21 +301,22 @@ export const lobbyReportRelations = relations(lobbyReport, ({one, many}) => ({
 		references: [user.id],
 		relationName: "lobbyReport_handledBy_user_id"
 	}),
-	user_reporterId: one(user, {
-		fields: [lobbyReport.reporterId],
-		references: [user.id],
-		relationName: "lobbyReport_reporterId_user_id"
+	lobby: one(lobby, {
+		fields: [lobbyReport.lobbyId],
+		references: [lobby.id]
 	}),
 	lobbyMessage: one(lobbyMessage, {
 		fields: [lobbyReport.reportedMessageId],
 		references: [lobbyMessage.id]
 	}),
-	lobby: one(lobby, {
-		fields: [lobbyReport.lobbyId],
-		references: [lobby.id]
+	user_reporterId: one(user, {
+		fields: [lobbyReport.reporterId],
+		references: [user.id],
+		relationName: "lobbyReport_reporterId_user_id"
 	}),
 	lobbyInfractions: many(lobbyInfraction),
 	lobbyReportActionLogs: many(lobbyReportActionLog),
+	moderatedContentHashes: many(moderatedContentHash),
 }));
 
 export const hubActivityMetricsRelations = relations(hubActivityMetrics, ({one}) => ({
@@ -426,7 +326,18 @@ export const hubActivityMetricsRelations = relations(hubActivityMetrics, ({one})
 	}),
 }));
 
-export const globalReportRelations = relations(globalReport, ({one}) => ({
+export const connectionRelations = relations(connection, ({one}) => ({
+	hub: one(hub, {
+		fields: [connection.hubId],
+		references: [hub.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [connection.serverId],
+		references: [serverData.id]
+	}),
+}));
+
+export const globalReportRelations = relations(globalReport, ({one, many}) => ({
 	user_handledBy: one(user, {
 		fields: [globalReport.handledBy],
 		references: [user.id],
@@ -446,6 +357,7 @@ export const globalReportRelations = relations(globalReport, ({one}) => ({
 		references: [user.id],
 		relationName: "globalReport_reporterId_user_id"
 	}),
+	moderatedContentHashes: many(moderatedContentHash),
 }));
 
 export const hubInviteRelations = relations(hubInvite, ({one}) => ({
@@ -462,28 +374,10 @@ export const hubAnnouncementRelations = relations(hubAnnouncement, ({one}) => ({
 	}),
 }));
 
-export const hubLogConfigRelations = relations(hubLogConfig, ({one}) => ({
-	hub: one(hub, {
-		fields: [hubLogConfig.hubId],
-		references: [hub.id]
-	}),
-}));
-
 export const hubMessageReactionRelations = relations(hubMessageReaction, ({one}) => ({
 	message: one(message, {
 		fields: [hubMessageReaction.messageId],
 		references: [message.id]
-	}),
-}));
-
-export const hubModeratorRelations = relations(hubModerator, ({one}) => ({
-	hub: one(hub, {
-		fields: [hubModerator.hubId],
-		references: [hub.id]
-	}),
-	user: one(user, {
-		fields: [hubModerator.userId],
-		references: [user.id]
 	}),
 }));
 
@@ -495,6 +389,13 @@ export const hubReviewRelations = relations(hubReview, ({one}) => ({
 	user: one(user, {
 		fields: [hubReview.userId],
 		references: [user.id]
+	}),
+}));
+
+export const hubLogConfigRelations = relations(hubLogConfig, ({one}) => ({
+	hub: one(hub, {
+		fields: [hubLogConfig.hubId],
+		references: [hub.id]
 	}),
 }));
 
@@ -520,15 +421,14 @@ export const hubUpvoteRelations = relations(hubUpvote, ({one}) => ({
 	}),
 }));
 
-export const serverBlacklistRelations = relations(serverBlacklist, ({one}) => ({
+export const reputationLogRelations = relations(reputationLog, ({one}) => ({
 	user: one(user, {
-		fields: [serverBlacklist.moderatorId],
+		fields: [reputationLog.receiverId],
 		references: [user.id]
 	}),
-	serverDatum: one(serverData, {
-		fields: [serverBlacklist.serverId],
-		references: [serverData.id]
-	}),
+}));
+
+export const serverBlacklistRelations = relations(serverBlacklist, ({one}) => ({
 	hubReport: one(hubReport, {
 		fields: [serverBlacklist.hubReportId],
 		references: [hubReport.id]
@@ -537,12 +437,13 @@ export const serverBlacklistRelations = relations(serverBlacklist, ({one}) => ({
 		fields: [serverBlacklist.lobbyReportId],
 		references: [lobbyReport.id]
 	}),
-}));
-
-export const reputationLogRelations = relations(reputationLog, ({one}) => ({
 	user: one(user, {
-		fields: [reputationLog.receiverId],
+		fields: [serverBlacklist.moderatorId],
 		references: [user.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [serverBlacklist.serverId],
+		references: [serverData.id]
 	}),
 }));
 
@@ -703,15 +604,34 @@ export const stripeSubscriptionRelations = relations(stripeSubscription, ({many}
 	premiumKeys: many(premiumKey),
 }));
 
+export const lobbyConnectionRelations = relations(lobbyConnection, ({one, many}) => ({
+	serverDatum: one(serverData, {
+		fields: [lobbyConnection.invokerServerId],
+		references: [serverData.id]
+	}),
+	user: one(user, {
+		fields: [lobbyConnection.invokerUserId],
+		references: [user.id]
+	}),
+	lobby: one(lobby, {
+		fields: [lobbyConnection.lobbyId],
+		references: [lobby.id]
+	}),
+	lobbyMessages: many(lobbyMessage),
+	lobbyMessageDeliveries: many(lobbyMessageDelivery),
+	lobbyParticipants: many(lobbyParticipant),
+}));
+
+export const lobbyRelations = relations(lobby, ({many}) => ({
+	lobbyConnections: many(lobbyConnection),
+	lobbyMessages: many(lobbyMessage),
+	lobbyReports: many(lobbyReport),
+	lobbyParticipants: many(lobbyParticipant),
+	safetySignals: many(safetySignal),
+	safetyFlags: many(safetyFlag),
+}));
+
 export const lobbyMessageRelations = relations(lobbyMessage, ({one, many}) => ({
-	lobbyMessage: one(lobbyMessage, {
-		fields: [lobbyMessage.replyToId],
-		references: [lobbyMessage.id],
-		relationName: "lobbyMessage_replyToId_lobbyMessage_id"
-	}),
-	lobbyMessages: many(lobbyMessage, {
-		relationName: "lobbyMessage_replyToId_lobbyMessage_id"
-	}),
 	user: one(user, {
 		fields: [lobbyMessage.authorId],
 		references: [user.id]
@@ -719,6 +639,14 @@ export const lobbyMessageRelations = relations(lobbyMessage, ({one, many}) => ({
 	lobby: one(lobby, {
 		fields: [lobbyMessage.lobbyId],
 		references: [lobby.id]
+	}),
+	lobbyMessage: one(lobbyMessage, {
+		fields: [lobbyMessage.replyToId],
+		references: [lobbyMessage.id],
+		relationName: "lobbyMessage_replyToId_lobbyMessage_id"
+	}),
+	lobbyMessages: many(lobbyMessage, {
+		relationName: "lobbyMessage_replyToId_lobbyMessage_id"
 	}),
 	lobbyConnection: one(lobbyConnection, {
 		fields: [lobbyMessage.sourceConnectionId],
@@ -757,7 +685,7 @@ export const userStatsRelations = relations(userStats, ({one}) => ({
 	}),
 }));
 
-export const lobbyInfractionRelations = relations(lobbyInfraction, ({one}) => ({
+export const lobbyInfractionRelations = relations(lobbyInfraction, ({one, many}) => ({
 	user_moderatorId: one(user, {
 		fields: [lobbyInfraction.moderatorId],
 		references: [user.id],
@@ -772,6 +700,7 @@ export const lobbyInfractionRelations = relations(lobbyInfraction, ({one}) => ({
 		references: [user.id],
 		relationName: "lobbyInfraction_userId_user_id"
 	}),
+	moderatedContentHashes: many(moderatedContentHash),
 }));
 
 export const lobbyReportActionLogRelations = relations(lobbyReportActionLog, ({one}) => ({
@@ -788,6 +717,257 @@ export const lobbyReportActionLogRelations = relations(lobbyReportActionLog, ({o
 		fields: [lobbyReportActionLog.targetUserId],
 		references: [user.id],
 		relationName: "lobbyReportActionLog_targetUserId_user_id"
+	}),
+}));
+
+export const autoModEscalationRuleRelations = relations(autoModEscalationRule, ({one}) => ({
+	user: one(user, {
+		fields: [autoModEscalationRule.createdBy],
+		references: [user.id]
+	}),
+	hub: one(hub, {
+		fields: [autoModEscalationRule.hubId],
+		references: [hub.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [autoModEscalationRule.serverId],
+		references: [serverData.id]
+	}),
+}));
+
+export const nsfwOverrideRelations = relations(nsfwOverride, ({one}) => ({
+	user: one(user, {
+		fields: [nsfwOverride.createdById],
+		references: [user.id]
+	}),
+	hub: one(hub, {
+		fields: [nsfwOverride.hubId],
+		references: [hub.id]
+	}),
+}));
+
+export const nsfwReviewQueueRelations = relations(nsfwReviewQueue, ({one}) => ({
+	user_authorId: one(user, {
+		fields: [nsfwReviewQueue.authorId],
+		references: [user.id],
+		relationName: "nsfwReviewQueue_authorId_user_id"
+	}),
+	user_handledById: one(user, {
+		fields: [nsfwReviewQueue.handledById],
+		references: [user.id],
+		relationName: "nsfwReviewQueue_handledById_user_id"
+	}),
+	hub: one(hub, {
+		fields: [nsfwReviewQueue.hubId],
+		references: [hub.id]
+	}),
+}));
+
+export const lobbyParticipantRelations = relations(lobbyParticipant, ({one}) => ({
+	lobby: one(lobby, {
+		fields: [lobbyParticipant.lobbyId],
+		references: [lobby.id]
+	}),
+	lobbyConnection: one(lobbyConnection, {
+		fields: [lobbyParticipant.sourceConnectionId],
+		references: [lobbyConnection.id]
+	}),
+	user: one(user, {
+		fields: [lobbyParticipant.userId],
+		references: [user.id]
+	}),
+}));
+
+export const automodRuleRelations = relations(automodRule, ({one, many}) => ({
+	user: one(user, {
+		fields: [automodRule.createdBy],
+		references: [user.id]
+	}),
+	hub: one(hub, {
+		fields: [automodRule.hubId],
+		references: [hub.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [automodRule.serverId],
+		references: [serverData.id]
+	}),
+	automodPatterns: many(automodPattern),
+	automodWhitelists: many(automodWhitelist),
+	serverAutomodRuleStates: many(serverAutomodRuleState),
+}));
+
+export const automodPatternRelations = relations(automodPattern, ({one}) => ({
+	automodRule: one(automodRule, {
+		fields: [automodPattern.ruleId],
+		references: [automodRule.id]
+	}),
+}));
+
+export const automodWhitelistRelations = relations(automodWhitelist, ({one}) => ({
+	user: one(user, {
+		fields: [automodWhitelist.createdBy],
+		references: [user.id]
+	}),
+	automodRule: one(automodRule, {
+		fields: [automodWhitelist.ruleId],
+		references: [automodRule.id]
+	}),
+}));
+
+export const authRoleRelations = relations(authRole, ({one, many}) => ({
+	hub: one(hub, {
+		fields: [authRole.hubId],
+		references: [hub.id]
+	}),
+	authUserAssignments: many(authUserAssignment),
+}));
+
+export const authUserAssignmentRelations = relations(authUserAssignment, ({one}) => ({
+	authRole: one(authRole, {
+		fields: [authUserAssignment.roleId],
+		references: [authRole.id]
+	}),
+	user: one(user, {
+		fields: [authUserAssignment.userId],
+		references: [user.id]
+	}),
+}));
+
+export const auditLogRelations = relations(auditLog, ({one}) => ({
+	user_actorId: one(user, {
+		fields: [auditLog.actorId],
+		references: [user.id],
+		relationName: "auditLog_actorId_user_id"
+	}),
+	serverDatum: one(serverData, {
+		fields: [auditLog.guildId],
+		references: [serverData.id]
+	}),
+	hub: one(hub, {
+		fields: [auditLog.hubId],
+		references: [hub.id]
+	}),
+	user_userId: one(user, {
+		fields: [auditLog.userId],
+		references: [user.id],
+		relationName: "auditLog_userId_user_id"
+	}),
+}));
+
+export const userSafetyScoreRelations = relations(userSafetyScore, ({one}) => ({
+	user: one(user, {
+		fields: [userSafetyScore.userId],
+		references: [user.id]
+	}),
+}));
+
+export const safetySignalRelations = relations(safetySignal, ({one}) => ({
+	hub: one(hub, {
+		fields: [safetySignal.hubId],
+		references: [hub.id]
+	}),
+	lobby: one(lobby, {
+		fields: [safetySignal.lobbyId],
+		references: [lobby.id]
+	}),
+	user: one(user, {
+		fields: [safetySignal.userId],
+		references: [user.id]
+	}),
+}));
+
+export const safetyFlagRelations = relations(safetyFlag, ({one}) => ({
+	user_acknowledgedBy: one(user, {
+		fields: [safetyFlag.acknowledgedBy],
+		references: [user.id],
+		relationName: "safetyFlag_acknowledgedBy_user_id"
+	}),
+	hub: one(hub, {
+		fields: [safetyFlag.hubId],
+		references: [hub.id]
+	}),
+	lobby: one(lobby, {
+		fields: [safetyFlag.lobbyId],
+		references: [lobby.id]
+	}),
+	user_userId: one(user, {
+		fields: [safetyFlag.userId],
+		references: [user.id],
+		relationName: "safetyFlag_userId_user_id"
+	}),
+}));
+
+export const bannedUserAliasRelations = relations(bannedUserAlias, ({one}) => ({
+	user: one(user, {
+		fields: [bannedUserAlias.userId],
+		references: [user.id]
+	}),
+}));
+
+export const moderatedContentHashRelations = relations(moderatedContentHash, ({one}) => ({
+	globalReport: one(globalReport, {
+		fields: [moderatedContentHash.globalReportId],
+		references: [globalReport.id]
+	}),
+	hubReport: one(hubReport, {
+		fields: [moderatedContentHash.hubReportId],
+		references: [hubReport.id]
+	}),
+	infraction: one(infraction, {
+		fields: [moderatedContentHash.infractionId],
+		references: [infraction.id]
+	}),
+	lobbyInfraction: one(lobbyInfraction, {
+		fields: [moderatedContentHash.lobbyInfractionId],
+		references: [lobbyInfraction.id]
+	}),
+	lobbyReport: one(lobbyReport, {
+		fields: [moderatedContentHash.lobbyReportId],
+		references: [lobbyReport.id]
+	}),
+}));
+
+export const serverSafetyScoreRelations = relations(serverSafetyScore, ({one}) => ({
+	serverDatum: one(serverData, {
+		fields: [serverSafetyScore.serverId],
+		references: [serverData.id]
+	}),
+}));
+
+export const serverSafetySignalRelations = relations(serverSafetySignal, ({one}) => ({
+	hub: one(hub, {
+		fields: [serverSafetySignal.hubId],
+		references: [hub.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [serverSafetySignal.serverId],
+		references: [serverData.id]
+	}),
+}));
+
+export const serverSafetyFlagRelations = relations(serverSafetyFlag, ({one}) => ({
+	user: one(user, {
+		fields: [serverSafetyFlag.acknowledgedBy],
+		references: [user.id]
+	}),
+	hub: one(hub, {
+		fields: [serverSafetyFlag.hubId],
+		references: [hub.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [serverSafetyFlag.serverId],
+		references: [serverData.id]
+	}),
+}));
+
+export const serverAutomodRuleStateRelations = relations(serverAutomodRuleState, ({one}) => ({
+	automodRule: one(automodRule, {
+		fields: [serverAutomodRuleState.ruleId],
+		references: [automodRule.id]
+	}),
+	serverDatum: one(serverData, {
+		fields: [serverAutomodRuleState.serverId],
+		references: [serverData.id]
 	}),
 }));
 

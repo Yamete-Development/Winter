@@ -98,7 +98,7 @@ export const connectionService = {
         hubId,
         channelId,
         serverId,
-        webhookUrl,
+        webhookURL: webhookUrl,
         parentId: parentId || null,
         connected: true,
         pausedByBot: false,
