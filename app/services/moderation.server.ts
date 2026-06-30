@@ -3,9 +3,11 @@ import { automodRule, automodPattern, infraction, user, type blockWordAction } f
 import { eq, inArray, desc } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { AutomodRuleResource, InfractionResource } from "../resources/moderation";
+import { permissionService } from "./permission.server";
 
 export const moderationService = {
-  async getAutomodRules(hubId: string): Promise<AutomodRuleResource[]> {
+  async getAutomodRules(hubId: string, userId: string): Promise<AutomodRuleResource[]> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_RULES");
     const rules = await db.select().from(automodRule).where(eq(automodRule.hubId, hubId));
 
     const ruleIds = rules.map(r => r.id);
@@ -35,7 +37,8 @@ export const moderationService = {
     }));
   },
 
-  async getRecentInfractions(hubId: string, limitCount: number = 20): Promise<InfractionResource[]> {
+  async getRecentInfractions(hubId: string, userId: string, limitCount: number = 20): Promise<InfractionResource[]> {
+    await permissionService.assertCanPerform(userId, hubId, "VIEW_LOGS");
     const targetUser = alias(user, "targetUser");
     const modUser = alias(user, "modUser");
 
@@ -97,6 +100,7 @@ export const moderationService = {
     }[],
     createdBy: string,
   ) {
+    await permissionService.assertCanPerform(createdBy, hubId, "MANAGE_RULES");
     const ruleIdsToKeep = new Set<string>();
 
     for (const rule of rules) {

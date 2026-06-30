@@ -111,7 +111,8 @@ export const hubStaffService = {
    * Returns all staff members with explicit role mappings inside this hub,
    * including position to allow UI sorting.
    */
-  async getStaff(hubId: string): Promise<{ userId: string; role: string; position: number }[]> {
+  async getStaff(hubId: string, userId: string): Promise<{ userId: string; role: string; position: number }[]> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_MODERATORS");
     const rows = await db
       .select({
         userId: authUserAssignment.userId,

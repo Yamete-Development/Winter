@@ -2,9 +2,11 @@ import { db } from "../db.server";
 import { message, user, serverData } from "../../drizzle/schema";
 import { eq, desc, lt, and } from "drizzle-orm";
 import type { MessageResource } from "../resources/message";
+import { permissionService } from "./permission.server";
 
 export const messageService = {
-  async getRecentMessages(hubId: string, limit: number = 50, cursor?: string): Promise<{ items: MessageResource[], nextCursor: string | null }> {
+  async getRecentMessages(hubId: string, userId: string, limit: number = 50, cursor?: string): Promise<{ items: MessageResource[], nextCursor: string | null }> {
+    await permissionService.assertCanPerform(userId, hubId, "VIEW_LOGS");
     const conditions = [eq(message.hubId, hubId)];
     if (cursor) {
       conditions.push(lt(message.createdAt, cursor));
@@ -63,6 +65,7 @@ export const messageService = {
     guildId: string,
     channelId: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    await permissionService.assertCanPerform(authorId, hubId, "MODERATE_MESSAGES");
     try {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();

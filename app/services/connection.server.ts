@@ -3,9 +3,11 @@ import { connection, serverData } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import type { HubConnectionResource } from "../resources/connection";
 import { discordService } from "./discord.server";
+import { permissionService } from "./permission.server";
 
 export const connectionService = {
-  async getHubConnections(hubId: string): Promise<HubConnectionResource[]> {
+  async getHubConnections(hubId: string, userId: string): Promise<HubConnectionResource[]> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_CONNECTIONS");
     const results = await db
       .select({
         connection,
@@ -47,7 +49,8 @@ export const connectionService = {
     return connectionsWithChannels;
   },
 
-  async toggleConnection(connectionId: string, hubId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
+  async toggleConnection(userId: string, connectionId: string, hubId: string, enabled: boolean): Promise<{ success: boolean; error?: string }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_CONNECTIONS");
     try {
       const result = await db
         .update(connection)
@@ -68,7 +71,8 @@ export const connectionService = {
     }
   },
 
-  async disconnectConnection(connectionId: string, hubId: string): Promise<{ success: boolean; error?: string }> {
+  async disconnectConnection(userId: string, connectionId: string, hubId: string): Promise<{ success: boolean; error?: string }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_CONNECTIONS");
     try {
       const result = await db
         .delete(connection)
@@ -85,12 +89,14 @@ export const connectionService = {
   },
 
   async createConnection(
+    userId: string,
     hubId: string,
     channelId: string,
     serverId: string,
     webhookUrl: string,
     parentId?: string
   ): Promise<{ success: boolean; hubId?: string; error?: string }> {
+    await permissionService.assertCanPerform(userId, hubId, "MANAGE_CONNECTIONS");
     const id = crypto.randomUUID();
     try {
       await db.insert(connection).values({

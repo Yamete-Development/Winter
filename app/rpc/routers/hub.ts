@@ -3,7 +3,6 @@ import { base, protectedBase } from "../context";
 import { hubService } from "../../services/hub.server";
 import { connectionService } from "../../services/connection.server";
 import { messageService } from "../../services/message.server";
-import { permissionService } from "../../services/permission.server";
 import { createHubSchema, patchHubConfigSchema } from "../../schemas/hub";
 import { z } from "zod";
 
@@ -34,14 +33,14 @@ export const hubRouter = base.router({
 
   getConnections: protectedBase
     .input(z.object({ hubId: z.string() }))
-    .handler(async ({ input }) => {
-      return connectionService.getHubConnections(input.hubId);
+    .handler(async ({ input, context }) => {
+      return connectionService.getHubConnections(input.hubId, context.user.id);
     }),
 
   getRecentMessages: protectedBase
     .input(z.object({ hubId: z.string(), limit: z.number().optional().default(50), cursor: z.string().optional() }))
-    .handler(async ({ input }) => {
-      return messageService.getRecentMessages(input.hubId, input.limit, input.cursor);
+    .handler(async ({ input, context }) => {
+      return messageService.getRecentMessages(input.hubId, context.user.id, input.limit, input.cursor);
     }),
 
   sendMessage: protectedBase
@@ -52,7 +51,6 @@ export const hubRouter = base.router({
       channelId: z.string(),
     }))
     .handler(async ({ input, context }) => {
-      await permissionService.assertCanPerform(context.user.id, input.hubId, "MODERATE_MESSAGES");
       const result = await messageService.sendMessage(
         input.hubId,
         input.content,
@@ -73,8 +71,7 @@ export const hubRouter = base.router({
       hubId: z.string(),
     }))
     .handler(async ({ input, context }) => {
-      await permissionService.assertCanPerform(context.user.id, input.hubId, "MANAGE_CONNECTIONS");
-      const result = await connectionService.toggleConnection(input.connectionId, input.hubId, input.enabled);
+      const result = await connectionService.toggleConnection(context.user.id, input.connectionId, input.hubId, input.enabled);
       if (!result.success) {
         throw new ORPCError("BAD_REQUEST", { message: result.error });
       }
@@ -87,8 +84,7 @@ export const hubRouter = base.router({
       hubId: z.string(),
     }))
     .handler(async ({ input, context }) => {
-      await permissionService.assertCanPerform(context.user.id, input.hubId, "MANAGE_CONNECTIONS");
-      const result = await connectionService.disconnectConnection(input.connectionId, input.hubId);
+      const result = await connectionService.disconnectConnection(context.user.id, input.connectionId, input.hubId);
       if (!result.success) {
         throw new ORPCError("BAD_REQUEST", { message: result.error });
       }
@@ -104,8 +100,8 @@ export const hubRouter = base.router({
       parentId: z.string().optional(),
     }))
     .handler(async ({ input, context }) => {
-      await permissionService.assertCanPerform(context.user.id, input.hubId, "MANAGE_CONNECTIONS");
       const result = await connectionService.createConnection(
+        context.user.id,
         input.hubId,
         input.channelId,
         input.serverId,

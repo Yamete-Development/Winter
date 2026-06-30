@@ -10,14 +10,14 @@ const hubRoleSchema = z.enum(["MANAGER", "MODERATOR"]);
 export const moderationRouter = base.router({
   getAutomodRules: protectedBase
     .input(z.object({ hubId: z.string() }))
-    .handler(async ({ input }) => {
-      return moderationService.getAutomodRules(input.hubId);
+    .handler(async ({ input, context }) => {
+      return moderationService.getAutomodRules(input.hubId, context.user.id);
     }),
 
   getRecentInfractions: protectedBase
     .input(z.object({ hubId: z.string() }))
-    .handler(async ({ input }) => {
-      return moderationService.getRecentInfractions(input.hubId);
+    .handler(async ({ input, context }) => {
+      return moderationService.getRecentInfractions(input.hubId, context.user.id);
     }),
 
   batchUpdateAutomodRules: protectedBase
@@ -32,8 +32,8 @@ export const moderationRouter = base.router({
 
   getStaff: protectedBase
     .input(z.object({ hubId: z.string() }))
-    .handler(async ({ input }) => {
-      return hubStaffService.getStaff(input.hubId);
+    .handler(async ({ input, context }) => {
+      return hubStaffService.getStaff(input.hubId, context.user.id);
     }),
 
   addModerator: protectedBase
