@@ -9,9 +9,9 @@ export function MarketingHeader() {
       </div>
       
       <nav style={{ gap: 32, fontSize: "0.95rem", fontWeight: 500, color: "rgba(255,255,255,0.8)" }} className="hidden md:flex">
-        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Product</a>
-        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Enterprise</a>
-        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Education</a>
+        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>About</a>
+        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Docs</a>
+        <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Invite</a>
         <a href="#" style={{ color: "inherit", textDecoration: "none", transition: "color 0.2s" }}>Pricing</a>
       </nav>
       
