@@ -1,93 +1,150 @@
 import { db } from "../db.server";
-import { hub, hubModerator, message } from "../../drizzle/schema";
+import { hub, message, authRole, authUserAssignment } from "../../drizzle/schema";
 import { eq, or, and, inArray } from "drizzle-orm";
 import type { CreateHubInput } from "../schemas/hub";
 import type { HubResource } from "../resources/hub";
 import { permissionService } from "./permission.server";
+import { irisClient } from "./iris.server";
+import {
+  PERMISSION_ACTIONS,
+  PERMISSION_BITMASKS,
+  getDefaultPermissions,
+  type PermissionAction,
+} from "../permissions/config";
 
 const DEFAULT_HUB_ICON_URL = "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=300&q=80";
 
-// FIXME: USE IRIS
+function bitsToRecord(bits: number): Record<PermissionAction, boolean> {
+  const record = getDefaultPermissions();
+  for (const action of PERMISSION_ACTIONS) {
+    const mask = PERMISSION_BITMASKS[action];
+    record[action] = (bits & mask) === mask;
+  }
+  return record;
+}
 
 export const hubService = {
   /**
-   * Retrieves all hubs where the user is owner or moderator.
-   * Owners get full permissions; non-owners get permissions resolved via Iris (3-layer cache).
+   * Retrieves all hubs where the user is owner or has an assignment via Iris.
+   * Eliminates old hubModerator references and batch-fetches roles to avoid N+1 queries.
    */
   async getUserHubs(userId: string): Promise<HubResource[]> {
-    const modHubIdsSubquery = db
-      .select({ hubId: hubModerator.hubId })
-      .from(hubModerator)
-      .where(eq(hubModerator.userId, userId));
+    const authorizedHubIds = await irisClient.getAuthorizedHubs(userId);
 
-    const hubRecords = await db
-      .select()
-      .from(hub)
-      .where(
-        or(
-          eq(hub.ownerId, userId),
-          inArray(hub.id, modHubIdsSubquery)
-        )
-      );
+    const conditions = [eq(hub.ownerId, userId)];
+    if (authorizedHubIds.length > 0) {
+      conditions.push(inArray(hub.id, authorizedHubIds));
+    }
 
-    const resources = await Promise.all(
-      hubRecords.map(async (record) => {
-        const isOwner = record.ownerId === userId;
-
-        let effectiveRole: string;
-        let permissions: import("../resources/hub").HubResource["metadata"]["permissions"];
-
-        if (isOwner) {
-          effectiveRole = "OWNER";
-          permissions = permissionService.getOwnerPermissions();
-        } else {
-          permissions = await permissionService.getPermissionsRecord(userId, record.id);
-          const [modRecord] = await db
-            .select({ role: hubModerator.role })
-            .from(hubModerator)
-            .where(and(eq(hubModerator.hubId, record.id), eq(hubModerator.userId, userId)))
-            .limit(1);
-          effectiveRole = modRecord?.role ?? "NONE";
-        }
-
-        return {
-          metadata: {
-            id: record.id,
-            name: record.name,
-            createdAt: record.createdAt,
-            updatedAt: record.updatedAt,
-            effectiveRole,
-            permissions,
-          },
-          spec: {
-            description: record.description,
-            shortDescription: record.shortDescription,
-            visibility: record.visibility,
-            language: record.language,
-            region: record.region,
-            welcomeMessage: record.welcomeMessage,
-            iconUrl: record.iconUrl,
-            bannerUrl: record.bannerUrl,
-            locked: record.locked,
-            nsfw: record.nsfw,
-            rules: record.rules,
-            appealCooldownHours: record.appealCooldownHours,
-            settings: record.settings,
-          },
-          status: {
-            activityLevel: record.activityLevel,
-            verified: record.verified,
-            partnered: record.partnered,
-            featured: record.featured,
-            weeklyMessageCount: record.weeklyMessageCount,
-            averageRating: record.averageRating,
-            connectionCount: record.connectionCount,
-            upvoteCount: record.upvoteCount,
-            reviewCount: record.reviewCount,
-          }
-        };
+    const rows = await db
+      .select({
+        hub: hub,
+        roleId: authRole.id,
+        roleName: authRole.name,
+        permissions: authRole.permissions,
+        position: authRole.position,
+        assignmentId: authUserAssignment.id,
       })
-    );
+      .from(hub)
+      .leftJoin(
+        authRole,
+        eq(authRole.hubId, hub.id)
+      )
+      .leftJoin(
+        authUserAssignment,
+        and(
+          eq(authUserAssignment.roleId, authRole.id),
+          eq(authUserAssignment.userId, userId)
+        )
+      )
+      .where(or(...conditions));
+
+    const hubGroups = new Map<string, {
+      hubRecord: typeof hub.$inferSelect,
+      assignments: Array<{
+        roleName: string;
+        permissions: number;
+        position: number;
+      }>
+    }>();
+
+    for (const row of rows) {
+      const hubId = row.hub.id;
+      if (!hubGroups.has(hubId)) {
+        hubGroups.set(hubId, {
+          hubRecord: row.hub,
+          assignments: [],
+        });
+      }
+      
+      if (row.assignmentId && row.roleName !== null && row.permissions !== null) {
+        hubGroups.get(hubId)!.assignments.push({
+          roleName: row.roleName,
+          permissions: row.permissions,
+          position: row.position ?? 0,
+        });
+      }
+    }
+
+    const resources: HubResource[] = Array.from(hubGroups.values()).map(({ hubRecord, assignments }) => {
+      const isOwner = hubRecord.ownerId === userId;
+      let effectiveRole: string;
+      let permissions: Record<PermissionAction, boolean>;
+
+      if (isOwner) {
+        effectiveRole = "OWNER";
+        permissions = permissionService.getOwnerPermissions();
+      } else if (assignments.length === 0) {
+        effectiveRole = "NONE";
+        permissions = getDefaultPermissions();
+      } else {
+        let bits = 0;
+        for (const ass of assignments) {
+          bits |= ass.permissions;
+        }
+        permissions = bitsToRecord(bits);
+
+        const sorted = [...assignments].sort((a, b) => b.position - a.position);
+        effectiveRole = sorted[0].roleName;
+      }
+
+      return {
+        metadata: {
+          id: hubRecord.id,
+          name: hubRecord.name,
+          createdAt: hubRecord.createdAt,
+          updatedAt: hubRecord.updatedAt,
+          effectiveRole,
+          permissions,
+        },
+        spec: {
+          description: hubRecord.description,
+          shortDescription: hubRecord.shortDescription,
+          visibility: hubRecord.visibility,
+          language: hubRecord.language,
+          region: hubRecord.region,
+          welcomeMessage: hubRecord.welcomeMessage,
+          iconUrl: hubRecord.iconUrl,
+          bannerUrl: hubRecord.bannerUrl,
+          locked: hubRecord.locked,
+          nsfw: hubRecord.nsfw,
+          rules: hubRecord.rules,
+          appealCooldownHours: hubRecord.appealCooldownHours,
+          settings: hubRecord.settings,
+        },
+        status: {
+          activityLevel: hubRecord.activityLevel,
+          verified: hubRecord.verified,
+          partnered: hubRecord.partnered,
+          featured: hubRecord.featured,
+          weeklyMessageCount: hubRecord.weeklyMessageCount,
+          averageRating: hubRecord.averageRating,
+          connectionCount: hubRecord.connectionCount,
+          upvoteCount: hubRecord.upvoteCount,
+          reviewCount: hubRecord.reviewCount,
+        }
+      };
+    });
 
     return resources;
   },

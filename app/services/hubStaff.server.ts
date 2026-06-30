@@ -1,32 +1,61 @@
 import { db } from "../db.server";
-import { hub, hubModerator } from "../../drizzle/schema";
-import { and, eq } from "drizzle-orm";
+import { authRole, authUserAssignment } from "../../drizzle/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { permissionService } from "./permission.server";
-import type { HubRole } from "../permissions/config";
 
 export const hubStaffService = {
   /**
    * Assigns (or updates) a role for a user in a hub.
    *
    * The invoking user must have MANAGE_MODERATORS. After the DB write,
-   * delegates cache invalidation to Iris (which handles L2 Redis cleanup
-   * + pub/sub fan-out for L1 SieveCache across all bot shards and the web app).
+   * delegates cache invalidation to Iris.
    */
   async assignRole(
     invokerUserId: string,
     targetUserId: string,
     hubId: string,
-    role: "MANAGER" | "MODERATOR"
+    roleName: string
   ): Promise<{ success: boolean; error?: string }> {
     await permissionService.assertCanPerform(invokerUserId, hubId, "MANAGE_MODERATORS");
 
     try {
+      // Look up matching authRole row
+      const [matchingRole] = await db
+        .select()
+        .from(authRole)
+        .where(and(eq(authRole.hubId, hubId), eq(authRole.name, roleName)))
+        .limit(1);
+
+      if (!matchingRole) {
+        return { success: false, error: "Role not found in this hub." };
+      }
+
+      const [existingAssignment] = await db
+        .select({ id: authUserAssignment.id })
+        .from(authUserAssignment)
+        .innerJoin(authRole, eq(authRole.id, authUserAssignment.roleId))
+        .where(
+          and(
+            eq(authUserAssignment.userId, targetUserId),
+            eq(authRole.hubId, hubId)
+          )
+        )
+        .limit(1);
+
+      const assignmentId = existingAssignment?.id ?? crypto.randomUUID();
+
       await db
-        .insert(hubModerator)
-        .values({ id: crypto.randomUUID(), hubId, userId: targetUserId, role })
+        .insert(authUserAssignment)
+        .values({
+          id: assignmentId,
+          roleId: matchingRole.id,
+          userId: targetUserId,
+        })
         .onConflictDoUpdate({
-          target: [hubModerator.hubId, hubModerator.userId],
-          set: { role },
+          target: authUserAssignment.id,
+          set: {
+            roleId: matchingRole.id,
+          },
         });
 
       await permissionService.invalidateRole(hubId, targetUserId);
@@ -41,10 +70,7 @@ export const hubStaffService = {
   },
 
   /**
-   * Removes a user's moderator/manager role in a hub.
-   *
-   * The invoking user must have MANAGE_MODERATORS. After the DB delete,
-   * delegates cache invalidation to Iris.
+   * Removes every authUserAssignment row for targetUserId that belongs to a role with authRole.hubId === hubId.
    */
   async removeRole(
     invokerUserId: string,
@@ -55,8 +81,19 @@ export const hubStaffService = {
 
     try {
       const result = await db
-        .delete(hubModerator)
-        .where(and(eq(hubModerator.hubId, hubId), eq(hubModerator.userId, targetUserId)));
+        .delete(authUserAssignment)
+        .where(
+          and(
+            eq(authUserAssignment.userId, targetUserId),
+            inArray(
+              authUserAssignment.roleId,
+              db
+                .select({ id: authRole.id })
+                .from(authRole)
+                .where(eq(authRole.hubId, hubId))
+            )
+          )
+        );
 
       if ((result.rowCount ?? 0) === 0) {
         return { success: false, error: "That user is not a moderator in this hub." };
@@ -71,14 +108,20 @@ export const hubStaffService = {
   },
 
   /**
-   * Returns all staff members (moderators + managers) for a hub.
+   * Returns all staff members with explicit role mappings inside this hub,
+   * including position to allow UI sorting.
    */
-  async getStaff(hubId: string): Promise<{ userId: string; role: HubRole }[]> {
+  async getStaff(hubId: string): Promise<{ userId: string; role: string; position: number }[]> {
     const rows = await db
-      .select({ userId: hubModerator.userId, role: hubModerator.role })
-      .from(hubModerator)
-      .where(eq(hubModerator.hubId, hubId));
+      .select({
+        userId: authUserAssignment.userId,
+        role: authRole.name,
+        position: authRole.position,
+      })
+      .from(authUserAssignment)
+      .innerJoin(authRole, eq(authRole.id, authUserAssignment.roleId))
+      .where(eq(authRole.hubId, hubId));
 
-    return rows.map((r) => ({ userId: r.userId, role: r.role as HubRole }));
+    return rows;
   },
 };
