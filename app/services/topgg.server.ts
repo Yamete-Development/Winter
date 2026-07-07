@@ -127,12 +127,14 @@ export class TopGGService {
           },
         });
 
-      // Step 2: Upsert UserStats record
+      // Step 2: Upsert UserStats record.
+      // Each vote also banks a daily-streak freeze, capped at 2.
       await this.db
         .insert(userStats)
         .values({
           userId: userId,
           voteCount: voteValue,
+          streakFreezes: 1,
           updatedAt: nowIso,
           createdAt: nowIso,
         })
@@ -140,6 +142,7 @@ export class TopGGService {
           target: userStats.userId,
           set: {
             voteCount: sql`${userStats.voteCount} + ${voteValue}`,
+            streakFreezes: sql`LEAST(${userStats.streakFreezes} + 1, 2)`,
             updatedAt: nowIso,
           },
         });
