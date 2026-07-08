@@ -33,6 +33,9 @@ export interface VoteResult {
   error?: string;
 }
 
+const SUPPORT_GUILD_ID = process.env.SUPPORT_GUILD_ID || "945379044277518456";
+const VOTER_ROLE_ID = process.env.VOTER_ROLE_ID || "945379044277518456";
+
 /**
  * Service handling Top.gg webhook cryptographic signature validation,
  * vote processing (database persistence), and Discord announcement dispatching.
@@ -196,6 +199,50 @@ export class TopGGService {
         totalVotes: 0,
         error: error instanceof Error ? error.message : "Unknown error",
       };
+    }
+  }
+
+  /**
+   * Grants the voter role in the support server after a vote.
+   * Non-fatal by design: a missing member (404) or permission problem must
+   * never fail the webhook, since the vote itself was already recorded.
+   */
+  public async grantVoterRole(userId: string): Promise<boolean> {
+    const token = process.env.DISCORD_TOKEN;
+    if (!token) {
+      console.error("DISCORD_TOKEN not set; cannot grant voter role");
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `https://discord.com/api/v10/guilds/${SUPPORT_GUILD_ID}/members/${userId}/roles/${VOTER_ROLE_ID}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bot ${token}`,
+            "X-Audit-Log-Reason": "Voted for InterChat on Top.gg",
+          },
+        }
+      );
+
+      if (response.status === 204) {
+        return true;
+      }
+
+      if (response.status === 404) {
+        // User is not a member of the support server — nothing to do
+        return false;
+      }
+
+      const body = await response.text();
+      console.error(
+        `Failed to grant voter role to ${userId}: ${response.status} ${body}`
+      );
+      return false;
+    } catch (error) {
+      console.error(`Error granting voter role to ${userId}:`, error);
+      return false;
     }
   }
 

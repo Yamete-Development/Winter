@@ -81,6 +81,14 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
+    // Grant the support-server voter role. Failures are logged inside the
+    let roleGranted = false;
+    if (payload.type === "vote.create") {
+      roleGranted = await topGGService.grantVoterRole(
+        payload.data.user.platform_id
+      );
+    }
+
     const sentNotif = await topGGService.sendDiscordVoteAnnouncement(
       payload,
       result
@@ -90,6 +98,7 @@ export async function action({ request }: ActionFunctionArgs) {
       {
         success: true,
         sentNotif,
+        roleGranted,
       },
       { status: 200 }
     );
