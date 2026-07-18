@@ -1,22 +1,33 @@
-FROM oven/bun:1-alpine AS development-dependencies-env
-COPY . /app
-WORKDIR /app
-RUN bun install
+# syntax=docker/dockerfile:1.7
 
-FROM oven/bun:1-alpine AS production-dependencies-env
-COPY ./package.json bun.lock /app/
+FROM oven/bun:1-slim AS development-dependencies
 WORKDIR /app
-RUN bun install --production
+COPY package.json bun.lock ./
+RUN --mount=type=cache,target=/root/.bun/install/cache,sharing=locked \
+    bun install --frozen-lockfile
 
-FROM oven/bun:1-alpine AS build-env
-COPY . /app/
-COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+FROM oven/bun:1-slim AS production-dependencies
 WORKDIR /app
+COPY package.json bun.lock ./
+RUN --mount=type=cache,target=/root/.bun/install/cache,sharing=locked \
+    bun install --frozen-lockfile --production
+
+FROM development-dependencies AS build
+COPY . .
 RUN bun run build
 
-FROM oven/bun:1-alpine
-COPY ./package.json bun.lock ./server.ts /app/
-COPY --from=production-dependencies-env /app/node_modules /app/node_modules
-COPY --from=build-env /app/build /app/build
+FROM oven/bun:1-slim AS runtime
+
 WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=production-dependencies --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=build --chown=bun:bun /app/build ./build
+COPY --chown=bun:bun package.json bun.lock server.ts ./
+
+USER bun
+
+EXPOSE 4000
+STOPSIGNAL SIGTERM
+
 CMD ["bun", "run", "start"]
