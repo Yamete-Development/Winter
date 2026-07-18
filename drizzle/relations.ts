@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { message, broadcast, hub, user, blockWord, serverData, infraction, appeal, hubReport, blacklist, lobbyReport, hubActivityMetrics, connection, globalReport, hubInvite, hubAnnouncement, hubMessageReaction, hubReview, hubLogConfig, hubRulesAcceptance, hubUpvote, reputationLog, serverBlacklist, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, giftCode, premiumKey, stripeSubscription, lobbyConnection, lobby, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, autoModEscalationRule, nsfwOverride, nsfwReviewQueue, lobbyParticipant, automodRule, automodPattern, automodWhitelist, authRole, authUserAssignment, auditLog, userSafetyScore, safetySignal, safetyFlag, bannedUserAlias, moderatedContentHash, serverSafetyScore, serverSafetySignal, serverSafetyFlag, serverAutomodRuleState, userAchievementProgress } from "./schema";
+import { message, broadcast, hub, user, blockWord, serverData, infraction, appeal, hubReport, blacklist, lobbyReport, hubActivityMetrics, connection, globalReport, hubInvite, hubAnnouncement, hubMessageReaction, hubReview, hubLogConfig, hubRulesAcceptance, hubUpvote, reputationLog, serverBlacklist, serverBlocklist, achievement, userAchievement, session, hubToTag, tag, bot, allowedBots, account, botToTag, botTag, hubServerStats, hubUserStats, lobbyConnection, lobby, lobbyMessage, betaServer, lobbyMessageDelivery, userStats, lobbyInfraction, lobbyReportActionLog, autoModEscalationRule, nsfwOverride, nsfwReviewQueue, lobbyParticipant, automodRule, automodPattern, automodWhitelist, authRole, authUserAssignment, auditLog, userSafetyScore, safetySignal, safetyFlag, bannedUserAlias, moderatedContentHash, serverSafetyScore, serverSafetySignal, serverSafetyFlag, serverAutomodRuleState, userAchievementProgress } from "./schema";
 
 export const broadcastRelations = relations(broadcast, ({one}) => ({
 	message: one(message, {
@@ -48,7 +48,6 @@ export const hubRelations = relations(hub, ({one, many}) => ({
 	allowedBots: many(allowedBots),
 	hubServerStats: many(hubServerStats),
 	hubUserStats: many(hubUserStats),
-	premiumKeys: many(premiumKey),
 	autoModEscalationRules: many(autoModEscalationRule),
 	nsfwOverrides: many(nsfwOverride),
 	nsfwReviewQueues: many(nsfwReviewQueue),
@@ -120,18 +119,6 @@ export const userRelations = relations(user, ({many}) => ({
 	sessions: many(session),
 	accounts: many(account),
 	hubUserStats: many(hubUserStats),
-	giftCodes_claimedBy: many(giftCode, {
-		relationName: "giftCode_claimedBy_user_id"
-	}),
-	giftCodes_purchasedBy: many(giftCode, {
-		relationName: "giftCode_purchasedBy_user_id"
-	}),
-	premiumKeys_assignedUser: many(premiumKey, {
-		relationName: "premiumKey_assignedUser_user_id"
-	}),
-	premiumKeys_purchasedBy: many(premiumKey, {
-		relationName: "premiumKey_purchasedBy_user_id"
-	}),
 	lobbyConnections: many(lobbyConnection),
 	lobbyMessages: many(lobbyMessage),
 	betaServers: many(betaServer),
@@ -197,7 +184,6 @@ export const serverDataRelations = relations(serverData, ({many}) => ({
 		relationName: "serverBlocklist_serverId_serverData_id"
 	}),
 	hubServerStats: many(hubServerStats),
-	premiumKeys: many(premiumKey),
 	lobbyConnections: many(lobbyConnection),
 	betaServers: many(betaServer),
 	autoModEscalationRules: many(autoModEscalationRule),
@@ -560,48 +546,6 @@ export const hubUserStatsRelations = relations(hubUserStats, ({one}) => ({
 		fields: [hubUserStats.userId],
 		references: [user.id]
 	}),
-}));
-
-export const giftCodeRelations = relations(giftCode, ({one}) => ({
-	user_claimedBy: one(user, {
-		fields: [giftCode.claimedBy],
-		references: [user.id],
-		relationName: "giftCode_claimedBy_user_id"
-	}),
-	user_purchasedBy: one(user, {
-		fields: [giftCode.purchasedBy],
-		references: [user.id],
-		relationName: "giftCode_purchasedBy_user_id"
-	}),
-}));
-
-export const premiumKeyRelations = relations(premiumKey, ({one}) => ({
-	serverDatum: one(serverData, {
-		fields: [premiumKey.assignedGuild],
-		references: [serverData.id]
-	}),
-	hub: one(hub, {
-		fields: [premiumKey.assignedHub],
-		references: [hub.id]
-	}),
-	user_assignedUser: one(user, {
-		fields: [premiumKey.assignedUser],
-		references: [user.id],
-		relationName: "premiumKey_assignedUser_user_id"
-	}),
-	user_purchasedBy: one(user, {
-		fields: [premiumKey.purchasedBy],
-		references: [user.id],
-		relationName: "premiumKey_purchasedBy_user_id"
-	}),
-	stripeSubscription: one(stripeSubscription, {
-		fields: [premiumKey.subscriptionId],
-		references: [stripeSubscription.id]
-	}),
-}));
-
-export const stripeSubscriptionRelations = relations(stripeSubscription, ({many}) => ({
-	premiumKeys: many(premiumKey),
 }));
 
 export const lobbyConnectionRelations = relations(lobbyConnection, ({one, many}) => ({

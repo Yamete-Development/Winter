@@ -6,23 +6,19 @@ export const approvalStatus = pgEnum("ApprovalStatus", ['PENDING', 'APPROVED', '
 export const badges = pgEnum("Badges", ['VOTER', 'SUPPORTER', 'TRANSLATOR', 'DEVELOPER', 'STAFF', 'BETA_TESTER', 'HUB_OWNER', 'HUB_MANAGER', 'HUB_MODERATOR', 'TOP_CHATTER'])
 export const blacklistType = pgEnum("BlacklistType", ['PERMANENT', 'TEMPORARY'])
 export const blockWordAction = pgEnum("BlockWordAction", ['BLOCK_MESSAGE', 'CENSOR_MESSAGE', 'SEND_ALERT', 'WARN', 'MUTE', 'BAN', 'BLACKLIST', 'CENSOR_WORD'])
-export const giftType = pgEnum("GiftType", ['FREE', 'DISCOUNT'])
 export const hubActivityLevel = pgEnum("HubActivityLevel", ['LOW', 'MEDIUM', 'HIGH'])
 export const hubVisibility = pgEnum("HubVisibility", ['PUBLIC', 'PRIVATE', 'UNLISTED'])
 export const infractionStatus = pgEnum("InfractionStatus", ['ACTIVE', 'REVOKED', 'APPEALED'])
 export const infractionType = pgEnum("InfractionType", ['BAN', 'BLACKLIST', 'MUTE', 'WARNING'])
-export const keyStatus = pgEnum("KeyStatus", ['ACTIVE', 'EXPIRED', 'REVOKED', 'PENDING'])
 export const lobbyInfractionType = pgEnum("LobbyInfractionType", ['warning'])
 export const lobbyReportActionType = pgEnum("LobbyReportActionType", ['warned', 'global_blacklisted', 'resolved', 'dismissed'])
 export const lobbyStatus = pgEnum("LobbyStatus", ['open', 'closed'])
 export const messageStatus = pgEnum("MessageStatus", ['PENDING', 'ACTIVE', 'DELETED'])
 export const patternMatchType = pgEnum("PatternMatchType", ['EXACT', 'PREFIX', 'SUFFIX', 'WILDCARD'])
-export const premiumTier = pgEnum("PremiumTier", ['CORE', 'PLUS', 'PRO'])
 export const reportStatus = pgEnum("ReportStatus", ['PENDING', 'RESOLVED', 'IGNORED'])
 export const safetyFlagStatus = pgEnum("SafetyFlagStatus", ['ACTIVE', 'ACKNOWLEDGED', 'DISMISSED', 'ESCALATED', 'RESOLVED'])
 export const safetyScoreTier = pgEnum("SafetyScoreTier", ['SAFE', 'LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK'])
 export const safetySignalType = pgEnum("SafetySignalType", ['INFRACTION_ACTIVE', 'INFRACTION_HISTORY', 'HUB_REPORT_RECEIVED', 'GLOBAL_REPORT_RECEIVED', 'LOBBY_REPORT_RECEIVED', 'CONTENT_SIMILARITY', 'NAME_SIMILARITY', 'JOIN_VELOCITY', 'MESSAGE_VELOCITY', 'ACCOUNT_AGE', 'REPUTATION', 'PREMIUM', 'STAFF_ROLE', 'HUB_STAFF_ROLE', 'VERIFIED_HUB_OWNER', 'AUTOMOD_VIOLATION', 'GUILD_INFRACTION_RATE', 'GUILD_NSFW_FREQUENCY', 'GUILD_AUTOMOD_VIOLATIONS', 'GUILD_BLACKLIST_HISTORY'])
-export const subscriptionStatus = pgEnum("SubscriptionStatus", ['ACTIVE', 'PAST_DUE', 'CANCELLED', 'PENDING'])
 
 
 export const broadcast = pgTable("Broadcast", {
@@ -136,7 +132,6 @@ export const user = pgTable("User", {
 	badges: badges().array().default([]).notNull(),
 	voteRemindersEnabled: boolean().default(true).notNull(),
 	lastVoteReminderSent: timestamp({ mode: 'string' }),
-	customerId: text(),
 }, (table) => [
 	index("User_createdAt_idx").using("btree", table.createdAt.asc().nullsLast().op("timestamp_ops")),
 	index("User_email_idx").using("btree", table.email.asc().nullsLast().op("text_ops")),
@@ -917,94 +912,6 @@ export const hubUserStats = pgTable("HubUserStats", {
 	}).onDelete("cascade"),
 	unique("HubUserStats_hub_user_year_month_key").on(table.hubId, table.month, table.userId, table.year),
 ]);
-
-export const stripeEvent = pgTable("StripeEvent", {
-	id: text().primaryKey().notNull(),
-	type: text().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
-
-export const giftCode = pgTable("GiftCode", {
-	id: text().primaryKey().notNull(),
-	type: giftType().notNull(),
-	tier: premiumTier().notNull(),
-	purchasedBy: text().notNull(),
-	claimedBy: text(),
-	discountCouponId: text(),
-	isClaimed: boolean().default(false).notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	claimedAt: timestamp({ mode: 'string' }),
-}, (table) => [
-	index("GiftCode_claimedBy_idx").using("btree", table.claimedBy.asc().nullsLast().op("text_ops")),
-	index("GiftCode_purchasedBy_idx").using("btree", table.purchasedBy.asc().nullsLast().op("text_ops")),
-	foreignKey({
-		columns: [table.claimedBy],
-		foreignColumns: [user.id],
-		name: "GiftCode_claimedBy_fkey"
-	}).onDelete("set null"),
-	foreignKey({
-		columns: [table.purchasedBy],
-		foreignColumns: [user.id],
-		name: "GiftCode_purchasedBy_fkey"
-	}).onDelete("cascade"),
-]);
-
-export const premiumKey = pgTable("PremiumKey", {
-	id: text().primaryKey().notNull(),
-	tier: premiumTier().notNull(),
-	purchasedBy: text(),
-	subscriptionId: text().notNull(),
-	assignedUser: text(),
-	assignedGuild: text(),
-	assignedHub: text(),
-	status: keyStatus().default('PENDING').notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-}, (table) => [
-	index("PremiumKey_assignedGuild_idx").using("btree", table.assignedGuild.asc().nullsLast().op("text_ops")),
-	index("PremiumKey_assignedHub_idx").using("btree", table.assignedHub.asc().nullsLast().op("text_ops")),
-	index("PremiumKey_assignedUser_idx").using("btree", table.assignedUser.asc().nullsLast().op("text_ops")),
-	index("PremiumKey_purchasedBy_idx").using("btree", table.purchasedBy.asc().nullsLast().op("text_ops")),
-	index("PremiumKey_subscriptionId_idx").using("btree", table.subscriptionId.asc().nullsLast().op("text_ops")),
-	foreignKey({
-		columns: [table.assignedGuild],
-		foreignColumns: [serverData.id],
-		name: "PremiumKey_assignedGuild_fkey"
-	}).onDelete("set null"),
-	foreignKey({
-		columns: [table.assignedHub],
-		foreignColumns: [hub.id],
-		name: "PremiumKey_assignedHub_fkey"
-	}).onDelete("set null"),
-	foreignKey({
-		columns: [table.assignedUser],
-		foreignColumns: [user.id],
-		name: "PremiumKey_assignedUser_fkey"
-	}).onDelete("set null"),
-	foreignKey({
-		columns: [table.purchasedBy],
-		foreignColumns: [user.id],
-		name: "PremiumKey_purchasedBy_fkey"
-	}).onDelete("set null"),
-	foreignKey({
-		columns: [table.subscriptionId],
-		foreignColumns: [stripeSubscription.id],
-		name: "PremiumKey_subscriptionId_fkey"
-	}).onDelete("cascade"),
-]);
-
-export const stripeSubscription = pgTable("StripeSubscription", {
-	id: text().primaryKey().notNull(),
-	customerId: text().notNull(),
-	tier: premiumTier().notNull(),
-	currentPeriodEnd: timestamp({ mode: 'string' }).notNull(),
-	cancelAtPeriodEnd: boolean().notNull(),
-	status: subscriptionStatus().default('PENDING').notNull(),
-	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
-	lastEventTime: bigint({ mode: "number" }),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
 
 export const lobby = pgTable("Lobby", {
 	id: varchar().primaryKey().notNull(),
