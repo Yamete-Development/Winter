@@ -11,8 +11,8 @@ export function CallsSection() {
             <div><strong>Garden Guild</strong><small># call-corner</small></div>
           </div>
           <div className="calls-map__track" aria-hidden="true">
-            <span className="calls-map__switch" />
-            <span className="calls-map__signal">MATCH</span>
+            <span className="calls-map__signal">Text route · Connected</span>
+            <span className="calls-map__route-note">Temporary connection</span>
           </div>
           <div className="calls-map__server calls-map__server--remote">
             <span className="server-mark server-mark--sky">PP</span>

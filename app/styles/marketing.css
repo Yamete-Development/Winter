@@ -542,11 +542,12 @@ html:has(.marketing-page) {
 .calls-map__server small { color: rgba(17,18,27,.6); font-size: .6rem; }
 .calls-map__server--local { top: 55px; left: 3%; }
 .calls-map__server--remote { top: 55px; right: 3%; }
-.calls-map__track { height: 3px; position: absolute; top: 160px; right: 11%; left: 11%; background: var(--atlas-ink); box-shadow: 0 11px 0 rgba(17,18,27,.25); transform: rotate(-2deg); }
-.calls-map__track::before, .calls-map__track::after { content: ""; width: 13px; height: 13px; position: absolute; top: -5px; border-radius: 50%; background: var(--atlas-ink); }
-.calls-map__track::before { left: 0; } .calls-map__track::after { right: 0; }
-.calls-map__switch { width: 90px; height: 3px; position: absolute; top: 14px; left: 43%; background: var(--atlas-ink); transform: rotate(22deg); transform-origin: left; }
-.calls-map__signal { position: absolute; top: -33px; left: 43%; padding: 4px 7px; border: 1px solid var(--atlas-ink); border-radius: 4px; background: var(--atlas-coral); font-size: .48rem; font-weight: 900; letter-spacing: .12em; }
+.calls-map__track { height: 4px; position: absolute; top: 160px; right: 9%; left: 9%; border-radius: 999px; background: var(--atlas-violet); }
+.calls-map__track::before, .calls-map__track::after { content: ""; width: 16px; height: 16px; position: absolute; top: -6px; border: 3px solid var(--atlas-ink); border-radius: 50%; background: var(--atlas-paper); }
+.calls-map__track::before { left: -8px; box-shadow: inset 0 0 0 4px var(--atlas-violet); }
+.calls-map__track::after { right: -8px; box-shadow: inset 0 0 0 4px #2a7198; }
+.calls-map__signal { position: absolute; top: -38px; left: 50%; padding: 4px 8px; border: 1px solid var(--atlas-ink); border-radius: 999px; background: var(--atlas-paper); font-size: .48rem; font-weight: 900; letter-spacing: .1em; white-space: nowrap; text-transform: uppercase; transform: translateX(-50%); }
+.calls-map__route-note { position: absolute; top: 15px; left: 50%; color: rgba(17,18,27,.62); font-size: .5rem; font-weight: 750; letter-spacing: .08em; white-space: nowrap; text-transform: uppercase; transform: translateX(-50%); }
 .call-card { width: min(520px, 91%); padding: 18px; position: absolute; top: 230px; left: 50%; border-color: rgba(255,255,255,.15); color: white; transform: translateX(-50%) rotate(-1deg); }
 .call-card header { padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,.12); display: flex; align-items: center; gap: 12px; }
 .call-card__peers { display: flex; }
@@ -592,7 +593,7 @@ html:has(.marketing-page) {
 .atlas-section--safety { background: var(--atlas-sage); }
 .safety-layout__copy { max-width: 850px; }
 .safety-route { margin-top: 88px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; position: relative; }
-.safety-route__line { height: 3px; position: absolute; top: 51px; right: 9%; left: 9%; background: var(--atlas-ink); }
+.safety-route__line { width: calc(66.6667% + 17.333px); height: 3px; position: absolute; top: 51px; left: 22px; background: var(--atlas-ink); }
 .checkpoint { min-width: 0; padding-top: 87px; position: relative; }
 .checkpoint__number { position: absolute; top: 4px; left: 0; color: rgba(17,18,27,.45); font-family: "Sora"; font-size: .57rem; font-weight: 800; }
 .checkpoint__marker { width: 44px; height: 44px; position: absolute; z-index: 2; top: 30px; left: 0; border: 2px solid var(--atlas-ink); border-radius: 14px; display: grid; place-items: center; background: var(--atlas-paper); box-shadow: 4px 5px 0 rgba(17,18,27,.18); font-weight: 900; }
@@ -673,7 +674,7 @@ html:has(.marketing-page) {
   .control-legend { width: min(100%, 680px); margin-inline: auto; grid-template-columns: 1fr 1fr; }
   .control-legend__heading, .control-legend__foot { grid-column: 1 / -1; }
   .safety-route { grid-template-columns: 1fr; gap: 20px; margin-left: 56px; }
-  .safety-route__line { width: 3px; height: auto; top: 0; bottom: 0; left: -34px; right: auto; }
+  .safety-route__line { width: 3px; height: auto; top: 0; bottom: 0; left: -57.5px; }
   .checkpoint { padding: 0; }
   .checkpoint__number { top: 12px; left: -54px; }
   .checkpoint__marker { top: 0; left: -56px; transform: translateX(-50%); }
@@ -723,7 +724,7 @@ html:has(.marketing-page) {
   .control-legend__heading, .control-legend__foot { grid-column: auto; }
   .control-legend__heading span { max-width: 180px; }
   .safety-route { margin-top: 60px; margin-left: 42px; }
-  .safety-route__line { left: -22px; }
+  .safety-route__line { left: -37.5px; }
   .checkpoint__marker { width: 38px; height: 38px; left: -36px; }
   .checkpoint__number { display: none; }
   .atlas-finale { min-height: 740px; padding: 120px 0; }
