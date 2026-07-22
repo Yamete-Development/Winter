@@ -1,4 +1,4 @@
-import { MessageFragment, SectionIntro } from "./Primitives";
+import { SectionIntro } from "./Primitives";
 import { Reveal } from "./Reveal";
 
 export function SafetySection() {
@@ -18,22 +18,28 @@ export function SafetySection() {
             <span className="checkpoint__number">01</span>
             <div className="checkpoint__marker" aria-hidden="true">✓</div>
             <div className="checkpoint__copy"><strong>Check before delivery</strong><span>Messages follow Hub and Call safety settings.</span></div>
-            <div className="held-message"><span>Message checked</span><p>Ready to continue along the route.</p></div>
+            <div className="safety-result-card">
+              <span>Check passed</span><strong>Message delivered</strong>
+              <p>Safety settings applied before delivery.</p>
+            </div>
           </Reveal>
           <Reveal className="checkpoint checkpoint--report" delay={160}>
             <span className="checkpoint__number">02</span>
             <div className="checkpoint__marker" aria-hidden="true">!</div>
             <div className="checkpoint__copy"><strong>Report with context</strong><span>People can flag a message or a wider conversation.</span></div>
-            <div className="report-fragment">
-              <MessageFragment initials="R" name="Report sent" tone="coral">This conversation needs a moderator.</MessageFragment>
-              <span>Scope: recent messages</span>
+            <div className="safety-result-card">
+              <span>Report received</span><strong>Context attached</strong>
+              <p>Recent messages are ready for moderator review.</p>
             </div>
           </Reveal>
           <Reveal className="checkpoint checkpoint--resolve" delay={240}>
             <span className="checkpoint__number">03</span>
             <div className="checkpoint__marker" aria-hidden="true">→</div>
             <div className="checkpoint__copy"><strong>Resolve with care</strong><span>Moderators act and leave a clear audit history.</span></div>
-            <div className="resolution-fragment"><span>Case reviewed</span><strong>Access restricted</strong><small>Reason recorded · Appeal available</small></div>
+            <div className="safety-result-card">
+              <span>Action recorded</span><strong>Access restricted</strong>
+              <p>Reason saved · Appeal available</p>
+            </div>
           </Reveal>
         </div>
       </div>

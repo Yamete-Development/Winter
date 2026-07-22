@@ -17,7 +17,7 @@ export function HubsSection() {
         </Reveal>
 
         <Reveal className="hub-plaza" delay={100}>
-          <svg viewBox="0 0 700 590" aria-hidden="true" focusable="false">
+          <svg viewBox="0 0 700 590" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <path d="M34 434C123 424 172 359 250 330S342 302 369 245" />
             <path d="M667 439C580 410 550 352 470 321S405 279 369 245" />
             <path d="M346 574C335 479 373 416 369 245" />
@@ -30,6 +30,11 @@ export function HubsSection() {
           <div className="hub-plaza__pin hub-plaza__pin--one"><AtlasPin label="Pixel Pier" tone="sky" /></div>
           <div className="hub-plaza__pin hub-plaza__pin--two"><AtlasPin label="Night Café" tone="coral" /></div>
           <div className="hub-plaza__pin hub-plaza__pin--three"><AtlasPin label="Garden Guild" /></div>
+          <div className="hub-mobile-routes" aria-label="Connected servers">
+            <AtlasPin label="Pixel Pier" tone="sky" />
+            <AtlasPin label="Night Café" tone="coral" />
+            <AtlasPin label="Garden Guild" />
+          </div>
 
           <div className="directory-card">
             <div className="directory-card__command">/hub directory</div>
