@@ -110,6 +110,7 @@ export function CreateHubWizard({ mode, open = false, onCancel, isFirstHub, onCr
 
   const shell = (
     <div
+      className="hub-wizard-shell"
       onClick={e => e.stopPropagation()}
       style={{
         display: "flex",
@@ -153,7 +154,7 @@ export function CreateHubWizard({ mode, open = false, onCancel, isFirstHub, onCr
 
       <WizardSidebar isFirstHub={isFirstHub} currentStep={currentStep} />
 
-      <div style={{ flex: 1, padding: "40px", display: "flex", flexDirection: "column" }}>
+      <div className="hub-wizard-content" style={{ flex: 1, padding: "40px", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
           <Title level={4} style={{ margin: 0, color: "white", fontWeight: 600 }}>
             {STEP_ITEMS[currentStep].title}
@@ -176,6 +177,7 @@ export function CreateHubWizard({ mode, open = false, onCancel, isFirstHub, onCr
         </div>
 
         <div
+          className="hub-wizard-footer"
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -228,7 +230,7 @@ export function CreateHubWizard({ mode, open = false, onCancel, isFirstHub, onCr
         centered
         transitionName=""
         closable={false}
-        maskClosable={canClose}
+        mask={{ closable: canClose }}
         className="hub-wizard-modal"
         styles={{
           body: { padding: 0 },

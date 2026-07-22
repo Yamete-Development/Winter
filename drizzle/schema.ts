@@ -820,6 +820,7 @@ export const serverData = pgTable("ServerData", {
 	autoRequeueOnSkip: boolean().default(false).notNull(),
 	autoRequeueOnHangup: boolean().default(false).notNull(),
 	filterNsfw: boolean().default(true).notNull(),
+	lobbyChannelIds: text("lobbyChannelIds").array().default([]).notNull(),
 }, (table) => [
 	index("ServerData_callCount_idx").using("btree", table.callCount.asc().nullsLast().op("int4_ops")),
 	index("ServerData_lastMessageAt_idx").using("btree", table.lastMessageAt.desc().nullsFirst().op("timestamp_ops")),

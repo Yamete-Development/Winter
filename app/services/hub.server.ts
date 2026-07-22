@@ -12,7 +12,7 @@ import {
   type PermissionAction,
 } from "../permissions/config";
 
-const DEFAULT_HUB_ICON_URL = "https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&w=300&q=80";
+const DEFAULT_HUB_ICON_URL = "https://interchat.tech/images/interchat.png";
 
 function bitsToRecord(bits: number): Record<PermissionAction, boolean> {
   const record = getDefaultPermissions();

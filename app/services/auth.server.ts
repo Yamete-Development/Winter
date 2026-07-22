@@ -4,6 +4,7 @@ import { DiscordStrategy } from "./discordStrategy.server";
 import { db } from "../db.server";
 import { user as userTable } from "../../drizzle/schema";
 import { permissionService } from "./permission.server";
+import { saveDiscordTokens } from "./oauthToken.server";
 
 export interface User {
   id: string;
@@ -26,7 +27,7 @@ authenticator.use(
       callbackURL: process.env.DISCORD_CALLBACK_URL || "http://localhost:5173/auth/discord/callback",
       scope: ["identify", "guilds"],
     },
-    async ({ profile }) => {
+    async ({ profile, tokens }) => {
       await db
         .insert(userTable)
         .values({
@@ -47,6 +48,7 @@ authenticator.use(
         });
 
       const isStaff = await permissionService.checkIsStaff(profile.id).catch(() => false);
+      await saveDiscordTokens(profile.id, tokens);
 
       return {
         id: profile.id,

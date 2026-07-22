@@ -6,6 +6,11 @@ export default [
   ]),
   layout("routes/dashboard/layout.tsx", [
     route("dashboard", "routes/dashboard/index.tsx"),
+    route("dashboard/inbox", "routes/dashboard/inbox.tsx"),
+    route("dashboard/hubs", "routes/dashboard/hubs.tsx"),
+    route("dashboard/hubs/:hubId/:view?", "routes/dashboard/hub-workspace.tsx"),
+    route("dashboard/servers", "routes/dashboard/servers.tsx"),
+    route("dashboard/servers/:serverId/:view?", "routes/dashboard/server-workspace.tsx"),
     route("dashboard/settings", "routes/dashboard/settings.tsx"),
   ]),
   layout("routes/staff/layout.tsx", [

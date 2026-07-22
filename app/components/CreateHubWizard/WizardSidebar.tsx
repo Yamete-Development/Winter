@@ -12,6 +12,7 @@ type WizardSidebarProps = {
 export function WizardSidebar({ isFirstHub, currentStep }: WizardSidebarProps) {
   return (
     <div
+      className="hub-wizard-sidebar"
       style={{
         width: 320,
         background: "#0f0f11",
@@ -21,7 +22,7 @@ export function WizardSidebar({ isFirstHub, currentStep }: WizardSidebarProps) {
         flexDirection: "column",
       }}
     >
-      <div style={{ marginBottom: 48 }}>
+      <div className="hub-wizard-sidebar__intro" style={{ marginBottom: 48 }}>
         <Tag
           style={{
             margin: 0,
@@ -47,12 +48,12 @@ export function WizardSidebar({ isFirstHub, currentStep }: WizardSidebarProps) {
         </Paragraph>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div className="hub-wizard-steps" style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {STEP_ITEMS.map((item, index) => {
           const active = index === currentStep;
           const past = index < currentStep;
           return (
-            <div key={item.title} style={{ display: "flex", gap: 16, opacity: active || past ? 1 : 0.4, transition: "opacity 0.2s" }}>
+            <div className="hub-wizard-step" key={item.title} style={{ display: "flex", gap: 16, opacity: active || past ? 1 : 0.4, transition: "opacity 0.2s" }}>
               <div
                 style={{
                   width: 28,

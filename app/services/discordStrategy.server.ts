@@ -18,12 +18,17 @@ export interface DiscordStrategyOptions {
   scope?: string[];
 }
 
-export class DiscordStrategy<User> extends Strategy<User, { profile: any }> {
+export type DiscordAuthPayload = {
+  profile: any;
+  tokens: { accessToken: string; refreshToken?: string; expiresIn: number; scope?: string };
+};
+
+export class DiscordStrategy<User> extends Strategy<User, DiscordAuthPayload> {
   name = "discord";
 
   constructor(
     protected options: DiscordStrategyOptions,
-    verify: Strategy.VerifyFunction<User, { profile: any }>
+    verify: Strategy.VerifyFunction<User, DiscordAuthPayload>
   ) {
     super(verify);
   }
@@ -84,7 +89,8 @@ export class DiscordStrategy<User> extends Strategy<User, { profile: any }> {
       throw new Error("Failed to fetch access token from Discord");
     }
 
-    const { access_token } = await tokenResponse.json();
+    const tokenData = await tokenResponse.json() as { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
+    const access_token = tokenData.access_token;
 
     // Phase 4: Fetch user profile
     const profileResponse = await fetch("https://discord.com/api/users/@me", {
@@ -98,6 +104,9 @@ export class DiscordStrategy<User> extends Strategy<User, { profile: any }> {
     const profile = await profileResponse.json();
 
     // Phase 5: Pass the raw profile up to the application's verify function
-    return await this.verify({ profile });
+    return await this.verify({
+      profile,
+      tokens: { accessToken: access_token, refreshToken: tokenData.refresh_token, expiresIn: tokenData.expires_in, scope: tokenData.scope },
+    });
   }
 }
