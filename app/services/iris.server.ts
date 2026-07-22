@@ -9,8 +9,20 @@ async function post<T>(path: string, payload: Record<string, string | number>): 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), IRIS_TIMEOUT_MS);
   try {
-    const response = await fetch(`${IRIS_URL}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: controller.signal });
-    if (!response.ok) throw new IrisUnavailableError(`Authorization service returned ${response.status}.`);
+    const response = await fetch(`${IRIS_URL}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Connect-Protocol-Version": "1",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).trim().slice(0, 512);
+      const suffix = detail ? ` ${detail}` : "";
+      throw new IrisUnavailableError(`Authorization service returned ${response.status}.${suffix}`);
+    }
     return await response.json() as T;
   } catch (error) {
     if (error instanceof IrisUnavailableError) throw error;
