@@ -63,7 +63,6 @@ export function HeroSection() {
           </div>
         </Reveal>
       </div>
-      <div className="atlas-route-exit" aria-hidden="true"><span /></div>
     </section>
   );
 }

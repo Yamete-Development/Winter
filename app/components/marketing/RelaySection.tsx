@@ -10,6 +10,14 @@ const channels = [
 export function RelaySection() {
   return (
     <section className="atlas-section atlas-section--paper relay-section" aria-labelledby="relay-title">
+      <div className="atlas-route-exit" aria-hidden="true">
+        <span className="atlas-route-exit__line" />
+        <span className="atlas-route-exit__node">01</span>
+        <span className="atlas-route-exit__label">
+          <small>Next stop</small>
+          <strong>Message relay</strong>
+        </span>
+      </div>
       <div className="atlas-container">
         <Reveal>
           <SectionIntro question="What does InterChat actually do?" title="One channel. A whole neighbourhood." titleId="relay-title">
