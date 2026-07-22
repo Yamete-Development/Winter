@@ -10,7 +10,7 @@ export function HeroSection() {
           <p className="atlas-eyebrow">InterChat for Discord</p>
           <h1 id="hero-title">Your server was never meant to be an island.</h1>
           <p className="atlas-hero__lede">
-            InterChat links channels across Discord servers through shared Hubs—and matches
+            InterChat links channels across Discord servers through shared Hubs, and matches
             communities for spontaneous text Calls, with safety and control built into every connection.
           </p>
           <div className="atlas-hero__actions">
