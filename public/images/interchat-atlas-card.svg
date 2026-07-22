@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#19172B"/>
+  <g fill="none" stroke="#8175EE" stroke-width="2" opacity=".18">
+    <ellipse cx="1040" cy="40" rx="250" ry="120"/><ellipse cx="1040" cy="40" rx="310" ry="170"/>
+    <ellipse cx="90" cy="650" rx="310" ry="190"/><ellipse cx="90" cy="650" rx="380" ry="250"/>
+  </g>
+  <path d="M-20 490C130 407 213 477 326 376s218-110 308-30 170 79 269-19 195-129 325-78" fill="none" stroke="#8175EE" stroke-width="4" stroke-dasharray="12 16"/>
+  <g font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700" fill="#F4F0E8">
+    <g transform="translate(205 436)"><circle r="11" fill="#8FD3FF"/><text x="20" y="6">PIXEL PIER</text></g>
+    <g transform="translate(613 347)"><circle r="11" fill="#8175EE"/><text x="20" y="6">GARDEN GUILD</text></g>
+    <g transform="translate(965 286)"><circle r="11" fill="#FF8C73"/><text x="20" y="6">NIGHT CAFÉ</text></g>
+  </g>
+  <g transform="translate(930 400)">
+    <circle cx="85" cy="85" r="80" fill="none" stroke="#8175EE" stroke-width="3" opacity=".45"/>
+    <circle cx="85" cy="85" r="58" fill="#5B4CCB"/>
+    <path d="M56 87c10-26 40-38 64-24l-12 2 8 12 22-26-31-11 8 12c-36-12-71 10-78 46zM114 84c-10 26-40 38-64 24l12-2-8-12-22 26 31 11-8-12c36 12 71-10 78-46z" fill="#F4F0E8"/>
+  </g>
+  <text x="70" y="90" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="800" letter-spacing="4" fill="#8FD3FF">INTERCHAT FOR DISCORD</text>
+  <text x="70" y="181" font-family="Sora,Arial,sans-serif" font-size="65" font-weight="600" letter-spacing="-3" fill="#FFFFFF">
+    <tspan x="70" dy="0">Your server was never</tspan><tspan x="70" dy="75">meant to be an island.</tspan>
+  </text>
+  <text x="73" y="362" font-family="Inter,Arial,sans-serif" font-size="23" fill="#C9C6D5">Shared Hubs. Spontaneous text Calls. Community control.</text>
+  <g transform="translate(70 432)">
+    <rect width="160" height="52" rx="26" fill="#5B4CCB"/>
+    <text x="28" y="33" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="800" fill="#FFFFFF">OPEN THE MAP</text>
+  </g>
+</svg>
