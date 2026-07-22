@@ -306,8 +306,8 @@ html:has(.marketing-page) {
 }
 
 .atlas-hero h1 {
-  max-width: 750px;
-  font-size: clamp(3rem, 7.2vw, 7rem);
+  max-width: 700px;
+  font-size: clamp(4.1rem, 5.25vw, 5.5rem);
   font-weight: 600;
   letter-spacing: -0.065em;
   line-height: 0.98;
@@ -639,7 +639,7 @@ html:has(.marketing-page) {
 
 @media (max-width: 1050px) {
   .atlas-hero__grid { grid-template-columns: .9fr 1.1fr; gap: 10px; }
-  .atlas-hero h1 { font-size: clamp(3.5rem, 7vw, 5.6rem); }
+  .atlas-hero h1 { font-size: clamp(3.6rem, 6.4vw, 4.5rem); }
   .hero-map { transform: scale(.9); transform-origin: center right; }
   .hubs-layout, .calls-layout, .control-layout { gap: 42px; }
   .relay-map { gap: 22px; }
@@ -662,7 +662,7 @@ html:has(.marketing-page) {
   .atlas-hero__grid, .hubs-layout, .calls-layout, .control-layout { grid-template-columns: 1fr; }
   .atlas-hero__grid { gap: 30px; }
   .atlas-hero__copy { max-width: 760px; }
-  .atlas-hero h1 { max-width: 760px; font-size: clamp(3.6rem, 11vw, 6rem); }
+  .atlas-hero h1 { max-width: 700px; font-size: clamp(3.4rem, 8vw, 4.2rem); }
   .hero-map { width: min(100%, 670px); margin-inline: auto; transform: none; }
   .relay-map { grid-template-columns: 1fr; gap: 54px; margin-left: 45px; }
   .relay-map__line { width: 3px; height: auto; top: 0; bottom: 0; left: -25px; right: auto; }
@@ -691,7 +691,7 @@ html:has(.marketing-page) {
   .atlas-section { padding: 96px 0; }
   .atlas-brand span { font-size: .78rem; }
   .atlas-hero { padding-top: 130px; }
-  .atlas-hero h1 { font-size: clamp(3rem, 15vw, 4.4rem); }
+  .atlas-hero h1 { font-size: clamp(2.75rem, 12vw, 3.4rem); }
   .atlas-hero__lede { font-size: 1rem; }
   .atlas-hero__actions, .finale-content__actions { align-items: flex-start; flex-direction: column; gap: 20px; }
   .hero-map { height: 550px; }
